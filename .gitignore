@@ -15,6 +15,7 @@ env/
 media/
 staticfiles/
 local_settings.py
+fix_users.py
 
 # IDE
 .vscode/

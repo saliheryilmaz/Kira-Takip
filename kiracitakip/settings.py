@@ -3,9 +3,9 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-kiraci-takip-gizli-anahtar-degistirin'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-kiraci-takip-gizli-anahtar-degistirin')
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
@@ -78,6 +78,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = '/giris/'
 LOGIN_REDIRECT_URL = '/'
+
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
 # WhatsApp Bildirimleri (CallMeBot)
 # Kurulum: https://www.callmebot.com/blog/free-api-whatsapp-messages/
