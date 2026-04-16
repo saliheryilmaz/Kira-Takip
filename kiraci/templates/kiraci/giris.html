@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş — KiracıTakip</title>
+    <link rel="icon" type="image/x-icon" href="/static/kiraci/favicon.ico">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #1a1d23; color: #e8edf2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .box { background: #21252e; border: 1px solid #2e3440; border-radius: 16px; padding: 40px 36px; width: 100%; max-width: 400px; }
+        .logo { text-align: center; margin-bottom: 32px; }
+        .logo-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 12px; }
+        .logo h1 { font-size: 18px; font-weight: 800; }
+        .logo p { font-size: 12px; color: #4a5a6a; margin-top: 4px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: #8a9ab0; margin-bottom: 6px; }
+        input { width: 100%; background: #282d38; border: 1px solid #3a4150; border-radius: 8px; padding: 10px 12px; color: #e8edf2; font-size: 14px; outline: none; }
+        input:focus { border-color: #00c896; }
+        .btn { width: 100%; background: #00c896; color: #000; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+        .btn:hover { background: #00e0a8; }
+        .alt { text-align: center; margin-top: 20px; font-size: 13px; color: #4a5a6a; }
+        .alt a { color: #00c896; text-decoration: none; }
+        .alert { background: rgba(255,71,87,0.12); color: #ff4757; border: 1px solid rgba(255,71,87,0.2); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="logo">
+            <div class="logo-icon"><img src="/static/kiraci/logoo.png" alt="Logo" style="width:48px; height:48px; border-radius:12px; object-fit:cover;"></div>
+            <h1>KİRACITAKİP</h1>
+            <p>Mülk Yönetim Sistemi</p>
+        </div>
+        {% for message in messages %}
+        <div class="alert">{{ message }}</div>
+        {% endfor %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" name="username" autofocus>
+            </div>
+            <div class="form-group">
+                <label>Şifre</label>
+                <input type="password" name="password">
+            </div>
+            <button type="submit" class="btn">Giriş Yap</button>
+        </form>
+        <div class="alt">Hesabın yok mu? <a href="{% url 'kayit' %}">Kayıt Ol</a></div>
+    </div>
+</body>
+</html>

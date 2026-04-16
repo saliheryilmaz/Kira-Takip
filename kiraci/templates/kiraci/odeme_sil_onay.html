@@ -1,0 +1,28 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}Ödeme Sil{% endblock %}
+{% block topbar_title %}Ödeme Sil{% endblock %}
+{% block content %}
+<div style="max-width: 480px;" class="sil-box">
+    <div class="card" style="border-color: rgba(255,71,87,0.3);">
+        <div class="card-header" style="background: var(--red-dim);">
+            <span class="card-title" style="color: var(--red);">⚠️ Ödeme Kaydını Sil</span>
+        </div>
+        <div style="padding: 28px;">
+            <p style="color: var(--text2); margin-bottom: 20px;">
+                <strong style="color: var(--text);">{{ kiraci.firma_adi }}</strong> firmasına ait
+                <strong style="color: var(--text);">{{ odeme.ay_adi }} {{ odeme.yil }}</strong> ödemesi
+                (<span class="amount" style="color: var(--accent);">{{ odeme.odenen_tutar|para }} ₺</span>)
+                <strong style="color: var(--red);">kalıcı olarak silinecek</strong>.
+            </p>
+            <div style="display:flex; gap:12px;">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">🗑 Evet, Sil</button>
+                </form>
+                <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

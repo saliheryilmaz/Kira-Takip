@@ -1,0 +1,83 @@
+{% extends 'kiraci/base.html' %}
+{% block title %}Profil — KiracıTakip{% endblock %}
+{% block topbar_title %}Profil Ayarları{% endblock %}
+
+{% block content %}
+<div style="max-width: 520px; width: 100%;">
+
+    <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><span class="card-title">Hesap Bilgileri</span></div>
+        <div style="padding: 18px 22px;">
+            <div style="font-size:12px; color:var(--text3); margin-bottom:4px;">Kullanıcı adı</div>
+            <div style="font-size:16px; font-weight:600;">{{ request.user.username }}</div>
+        </div>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- WhatsApp -->
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><span class="card-title">📱 WhatsApp Bildirimleri</span></div>
+            <div style="padding: 20px 22px;">
+                <div style="background:var(--bg3); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--text3); margin-bottom:16px;">
+                    <strong style="color:var(--text2);">+34 644 59 78 19</strong> numarasına WhatsApp'tan
+                    <strong style="color:var(--accent);">I allow callmebot to send me messages</strong> yaz, gelen API key'i gir.
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label>CallMeBot API Key</label>
+                    {{ form.callmebot_api_key }}
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Numarası</label>
+                    {{ form.whatsapp_no }}
+                    <span style="font-size:11px; color:var(--text3);">Başında 0 olmadan: 5XXXXXXXXX</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><span class="card-title">📧 Email Bildirimleri</span></div>
+            <div style="padding: 20px 22px;">
+                <div style="background:var(--bg3); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--text3); margin-bottom:16px;">
+                    Gmail kullanıyorsan: Google Hesabı → Güvenlik → 2 Adımlı Doğrulama → <strong style="color:var(--accent);">Uygulama Şifreleri</strong>'nden şifre oluştur.
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        {{ form.email_bildirimleri }} Email bildirimleri aktif
+                    </label>
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label>Bildirimin Gideceği Email</label>
+                    {{ form.bildirim_email }}
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label>Gönderici Gmail Adresi</label>
+                    {{ form.smtp_user }}
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label>App Password</label>
+                    {{ form.smtp_password }}
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label>SMTP Sunucu</label>
+                        {{ form.smtp_host }}
+                    </div>
+                    <div class="form-group">
+                        <label>Port</label>
+                        {{ form.smtp_port }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:12px; justify-content:space-between; align-items:center;">
+            <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+            <a href="{% url 'cikis' %}" class="btn btn-danger btn-sm">🚪 Çıkış Yap</a>
+        </div>
+    </form>
+
+</div>
+{% endblock %}

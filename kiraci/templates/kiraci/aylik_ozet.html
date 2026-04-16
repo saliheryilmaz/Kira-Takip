@@ -1,0 +1,242 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}{{ ay_adi }} {{ yil }} Özeti — KiracıTakip{% endblock %}
+{% block topbar_title %}Aylık Ödeme Özeti{% endblock %}
+
+{% block extra_css %}
+<style>
+.month-nav {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 22px;
+    flex-wrap: wrap;
+}
+.month-nav .current-month {
+    font-family: inherit;
+    font-size: 22px;
+    font-weight: 800;
+    flex: 1;
+    text-align: center;
+    min-width: 120px;
+}
+.month-filter select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Desktop tablo */
+.pay-row-desktop {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 120px 130px 80px;
+    align-items: center;
+    padding: 14px 20px;
+    gap: 12px;
+}
+.pay-row-header {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 120px 130px 80px;
+    gap: 12px;
+    background: var(--bg3);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+}
+.pay-row-header span {
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 500;
+}
+.pay-row-sub {
+    display: grid;
+    grid-template-columns: 1fr 120px 120px 120px 130px 80px;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+}
+
+@media (max-width: 768px) {
+    .month-nav { padding: 10px 12px; gap: 8px; justify-content: space-between; }
+    .month-nav .current-month { font-size: 15px; min-width: 80px; }
+    .month-filter { display: flex; gap: 5px; }
+    .month-filter select { font-size: 12px; padding: 5px 6px; max-width: 80px; }
+
+    .pay-row-header { display: none; }
+    .pay-row-desktop { display: none !important; }
+
+    .pay-mobile-card { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+    .pay-mobile-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .pay-mobile-amounts { display: flex; gap: 12px; font-size: 13px; flex-wrap: wrap; }
+    .pay-mobile-sub {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 5px 0; border-top: 1px dashed var(--border); margin-top: 5px; font-size: 13px;
+    }
+}
+
+@media (min-width: 769px) {
+    .pay-mobile-card { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Ay Navigasyonu -->
+<div class="month-nav">
+    <a href="?yil={{ onceki_yil }}&ay={{ onceki_ay }}" class="btn btn-ghost btn-sm">← Önceki</a>
+    <div class="current-month">{{ ay_adi }} {{ yil }}</div>
+    <form method="get" class="month-filter" style="display:flex; gap:8px; align-items:center;">
+        <select name="yil" onchange="this.form.submit()">
+            {% for y in yillar %}
+            <option value="{{ y }}" {% if y == yil %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+        <select name="ay" onchange="this.form.submit()">
+            {% for i, ad in ay_adlari.items %}
+            <option value="{{ i }}" {% if i == ay %}selected{% endif %}>{{ ad }}</option>
+            {% endfor %}
+        </select>
+    </form>
+    <a href="?yil={{ sonraki_yil }}&ay={{ sonraki_ay }}" class="btn btn-ghost btn-sm">Sonraki →</a>
+</div>
+
+<!-- Özet İstatistikler -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+    <div class="stat-card">
+        <div class="stat-label">Bu Ay Beklenen</div>
+        <div class="stat-value text-mono" style="font-size:20px;">{{ toplam_beklenen|para }} ₺</div>
+        <div class="stat-sub">{{ ozet_listesi|length }} aktif kiracı</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Tahsil Edilen</div>
+        <div class="stat-value green text-mono" style="font-size:20px;">{{ toplam_odenen|para }} ₺</div>
+        <div class="stat-sub">
+            {% with odeyenler=ozet_listesi|length %}
+            toplam ödeme
+            {% endwith %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Eksik / Alacak</div>
+        <div class="stat-value {% if toplam_eksik > 0 %}red{% else %}green{% endif %} text-mono" style="font-size:20px;">{{ toplam_eksik|para }} ₺</div>
+    </div>
+</div>
+
+<!-- Detay Tablosu -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">{{ ay_adi }} {{ yil }} — Kiracı Bazlı Durum</span>
+    </div>
+
+    <div class="pay-row-header">
+        <span>Firma</span>
+        <span>Beklenen</span>
+        <span>Ödenen</span>
+        <span>Eksik</span>
+        <span>Tür</span>
+        <span>İşlem</span>
+    </div>
+
+    {% for item in ozet_listesi %}
+    <div style="border-bottom: 1px solid var(--border);">
+
+        <!-- DESKTOP -->
+        <div class="pay-row-desktop">
+            <div>
+                <a href="{% url 'kiraci_detay' item.kiraci.pk %}" style="color: var(--text); font-weight: 500; font-size: 14px;">{{ item.kiraci.firma_adi }}</a>
+                {% if item.kiraci.yetkili_kisi %}<div style="font-size: 11.5px; color: var(--text3);">{{ item.kiraci.yetkili_kisi }}</div>{% endif %}
+            </div>
+            <div class="amount">{{ item.beklenen|para }} ₺</div>
+            <div>
+                {% if item.odenen > 0 %}<span class="amount text-green">{{ item.odenen|para }} ₺</span>
+                {% else %}<span class="amount text-muted">—</span>{% endif %}
+            </div>
+            <div>
+                {% if item.eksik > 0 %}<span style="font-family:monospace; font-size:12.5px; color: var(--red);">-{{ item.eksik|para }} ₺</span>
+                {% elif item.odenen > 0 %}<span style="font-size:12px; color: var(--accent);">✓ Tam</span>
+                {% else %}<span style="font-family:monospace; font-size:12.5px; color: var(--red);">-{{ item.beklenen|para }} ₺</span>{% endif %}
+            </div>
+            <div>
+                {% if item.odemeler %}{% for o in item.odemeler %}
+                    {% if o.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
+                    {% elif o.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
+                    {% elif o.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+                {% endfor %}{% else %}<span class="badge badge-red">✗ Yok</span>{% endif %}
+            </div>
+            <div>
+                <a href="{% url 'odeme_ekle' item.kiraci.pk %}?yil={{ yil }}&ay={{ ay }}" class="btn btn-primary btn-sm">+ Ekle</a>
+            </div>
+        </div>
+        {% for odeme in item.odemeler %}
+        <div class="pay-row-sub pay-row-desktop" style="padding: 0 20px 10px;">
+            <div style="font-size:11.5px; color:var(--text3); padding-left:8px;">{{ odeme.odeme_tarihi|date:"d.m.Y" }}{% if odeme.aciklama %} — {{ odeme.aciklama }}{% endif %}</div>
+            <div></div>
+            <div class="amount text-green">{{ odeme.odenen_tutar|para }} ₺</div>
+            <div></div>
+            <div>
+                {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
+                {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
+                {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+            </div>
+            <div><a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">✏️</a></div>
+        </div>
+        {% endfor %}
+
+        <!-- MOBILE -->
+        <div class="pay-mobile-card">
+            <div class="pay-mobile-top">
+                <div>
+                    <a href="{% url 'kiraci_detay' item.kiraci.pk %}" style="color:var(--text); font-weight:600; font-size:14px;">{{ item.kiraci.firma_adi }}</a>
+                    {% if item.kiraci.yetkili_kisi %}<div style="font-size:11px; color:var(--text3);">{{ item.kiraci.yetkili_kisi }}</div>{% endif %}
+                </div>
+                <a href="{% url 'odeme_ekle' item.kiraci.pk %}?yil={{ yil }}&ay={{ ay }}" class="btn btn-primary btn-sm">+ Ekle</a>
+            </div>
+            <div class="pay-mobile-amounts">
+                <span style="color:var(--text3);">Beklenen: <span class="amount" style="color:var(--text);">{{ item.beklenen|para }} ₺</span></span>
+                <span style="color:var(--text3);">Ödenen: <span class="amount text-green">{{ item.odenen|para }} ₺</span></span>
+                <span>
+                    {% if item.eksik > 0 %}<span class="text-red">Eksik: {{ item.eksik|para }} ₺</span>
+                    {% elif item.odenen > 0 %}<span class="text-green">✓ Tam</span>
+                    {% else %}<span class="text-red">Ödenmedi</span>{% endif %}
+                </span>
+            </div>
+            {% for odeme in item.odemeler %}
+            <div class="pay-mobile-sub">
+                <div>
+                    {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
+                    {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
+                    {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+                    <span style="font-size:11px; color:var(--text3); margin-left:6px;">{{ odeme.odeme_tarihi|date:"d.m.Y" }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span class="amount text-green">{{ odeme.odenen_tutar|para }} ₺</span>
+                    <a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">✏️</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="icon">📅</div>
+        <p>Bu ay için kayıt bulunamadı.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

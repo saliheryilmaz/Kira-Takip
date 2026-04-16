@@ -1,0 +1,68 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}Ödeme Ekle — {{ kiraci.firma_adi }}{% endblock %}
+{% block topbar_title %}{% if duzenleme %}Ödeme Düzenle{% else %}Ödeme Ekle{% endif %} — {{ kiraci.firma_adi }}{% endblock %}
+{% block topbar_actions %}
+    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">← Geri</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 560px; width: 100%;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">
+                {% if duzenleme %}Ödeme Düzenle{% else %}Yeni Ödeme Kaydı{% endif %}
+            </span>
+            <span class="badge badge-blue">{{ kiraci.firma_adi }}</span>
+        </div>
+        <div style="padding: 24px;">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid" style="margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Yıl *</label>
+                        {{ form.yil }}
+                    </div>
+                    <div class="form-group">
+                        <label>Ay *</label>
+                        {{ form.ay }}
+                    </div>
+                    <div class="form-group">
+                        <label>Ödenen Tutar (₺) *</label>
+                        {{ form.odenen_tutar }}
+                        <span style="font-size:11px; color: var(--text3);">Beklenen: {{ kiraci.aylik_kira_tutari|para }} ₺</span>
+                    </div>
+                    <div class="form-group">
+                        <label>Ödeme Türü *</label>
+                        {{ form.odeme_turu }}
+                    </div>
+                    <div class="form-group">
+                        <label>Ödeme Tarihi</label>
+                        {{ form.odeme_tarihi }}
+                    </div>
+                    <div class="form-group full">
+                        <label>Açıklama</label>
+                        {{ form.aciklama }}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-error">{{ form.non_field_errors.0 }}</div>
+                {% endif %}
+
+                <!-- Ödeme türü açıklamaları -->
+                <div style="background: var(--bg3); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; font-size: 12px; color: var(--text3);">
+                    <div style="margin-bottom: 4px;"><span style="color: var(--accent);">🏦 Resmi</span> — Banka havalesi, EFT veya resmi dekont</div>
+                    <div style="margin-bottom: 4px;"><span style="color: var(--yellow);">📝 Gayri Resmi</span> — Belgesiz, kayıt dışı ödeme</div>
+                    <div><span style="color: var(--blue);">💵 Elden</span> — Nakit, yüz yüze teslim</div>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+                    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

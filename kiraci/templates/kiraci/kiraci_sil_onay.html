@@ -1,0 +1,24 @@
+{% extends 'kiraci/base.html' %}
+{% block title %}Kiracı Sil — KiracıTakip{% endblock %}
+{% block topbar_title %}Kiracı Sil{% endblock %}
+{% block content %}
+<div style="max-width: 480px;" class="sil-box">
+    <div class="card" style="border-color: rgba(255,71,87,0.3);">
+        <div class="card-header" style="background: var(--red-dim);">
+            <span class="card-title" style="color: var(--red);">⚠️ Kiracıyı Sil</span>
+        </div>
+        <div style="padding: 28px;">
+            <p style="color: var(--text2); margin-bottom: 20px;">
+                <strong style="color: var(--text);">{{ kiraci.firma_adi }}</strong> adlı kiracı ve tüm ödeme geçmişi <strong style="color: var(--red);">kalıcı olarak silinecek</strong>. Devam etmek istiyor musunuz?
+            </p>
+            <div style="display:flex; gap:12px;">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">🗑 Evet, Sil</button>
+                </form>
+                <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

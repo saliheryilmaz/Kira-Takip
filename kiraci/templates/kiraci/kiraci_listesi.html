@@ -1,0 +1,117 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}Kiracı Listesi — KiracıTakip{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block topbar_actions %}
+    <a href="{% url 'kiraci_ekle' %}" class="btn btn-primary">➕ Yeni Kiracı</a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Aktif Kiracı</div>
+        <div class="stat-value">{{ aktif_sayisi }}</div>
+        <div class="stat-sub">toplam firma</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Toplam Beklenen</div>
+        <div class="stat-value text-mono" style="font-size:18px;">{{ toplam_beklenen|para }} ₺</div>
+        <div class="stat-sub">bugüne kadar kümülatif</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Toplam Tahsilat</div>
+        <div class="stat-value green text-mono" style="font-size:18px;">{{ toplam_odenen|para }} ₺</div>
+        <div class="stat-sub">toplam alınan ödeme</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Toplam Alacak</div>
+        <div class="stat-value {% if toplam_borc > 0 %}red{% else %}green{% endif %} text-mono" style="font-size:18px;">{{ toplam_borc|para }} ₺</div>
+        <div class="stat-sub">tahsil edilemeyen</div>
+    </div>
+</div>
+
+<!-- Bu ay ödeme yapmayanlar -->
+{% if bu_ay_odemeyen %}
+<div class="card mb-4" style="border-color: rgba(255,165,2,0.3);">
+    <div class="card-header" style="background: var(--yellow-dim);">
+        <span class="card-title" style="color: var(--yellow);">⚠️ Bu Ay Ödeme Bekleyenler</span>
+    </div>
+    <div style="padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 8px;">
+        {% for k in bu_ay_odemeyen %}
+            <a href="{% url 'kiraci_detay' k.pk %}" class="badge badge-yellow" style="font-size:12px; padding: 5px 12px;">
+                {{ k.firma_adi }} · {{ k.aylik_kira_tutari|para }} ₺
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Kiracı Tablosu -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Tüm Kiracılar</span>
+        <a href="{% url 'aylik_ozet' %}" class="btn btn-ghost btn-sm">📅 Aylık Görünüm</a>
+    </div>
+    {% if kiraciler %}
+    <table>
+        <thead>
+            <tr>
+                <th>Firma</th>
+                <th>Aylık Kira</th>
+                <th>Başlangıç</th>
+                <th>Toplam Beklenen</th>
+                <th>Toplam Ödenen</th>
+                <th>Alacak</th>
+                <th>Durum</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for kiraci in kiraciler %}
+            <tr>
+                <td data-label="Firma">
+                    <div class="firm-name">{{ kiraci.firma_adi }}</div>
+                    {% if kiraci.yetkili_kisi %}
+                    <div class="firm-sub">{{ kiraci.yetkili_kisi }}</div>
+                    {% endif %}
+                </td>
+                <td data-label="Aylık Kira"><span class="amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span></td>
+                <td data-label="Başlangıç" class="text-muted">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}</td>
+                <td data-label="Toplam Beklenen"><span class="amount">{{ kiraci.toplam_beklenen|para }} ₺</span></td>
+                <td data-label="Toplam Ödenen"><span class="amount text-green">{{ kiraci.toplam_odenen|para }} ₺</span></td>
+                <td data-label="Alacak">
+                    {% with borc=kiraci.toplam_borc %}
+                    <span class="amount {% if borc > 0 %}text-red{% else %}text-green{% endif %}">
+                        {{ borc|para }} ₺
+                    </span>
+                    {% endwith %}
+                </td>
+                <td data-label="Durum">
+                    {% if kiraci.aktif %}
+                        <span class="badge badge-green">● Aktif</span>
+                    {% else %}
+                        <span class="badge badge-gray">● Pasif</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="flex gap-2">
+                        <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">Detay →</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">🏢</div>
+        <p>Henüz kiracı eklenmemiş.</p>
+        <br>
+        <a href="{% url 'kiraci_ekle' %}" class="btn btn-primary">İlk Kiracıyı Ekle</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

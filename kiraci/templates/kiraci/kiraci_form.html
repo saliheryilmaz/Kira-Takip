@@ -1,0 +1,102 @@
+{% extends 'kiraci/base.html' %}
+
+{% block title %}{{ baslik }} — KiracıTakip{% endblock %}
+{% block topbar_title %}{{ baslik }}{% endblock %}
+{% block topbar_actions %}
+    {% if kiraci %}
+    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">← Geri</a>
+    {% else %}
+    <a href="{% url 'kiraci_listesi' %}" class="btn btn-ghost btn-sm">← Geri</a>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 760px; width: 100%;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{{ baslik }}</span>
+        </div>
+        <div style="padding: 24px;">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="section-title" style="margin-bottom:16px;">Temel Bilgiler</div>
+                <div class="form-grid" style="margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label>Firma Adı *</label>
+                        {{ form.firma_adi }}
+                        {% if form.firma_adi.errors %}<span style="color:var(--red); font-size:11px;">{{ form.firma_adi.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Yetkili Kişi</label>
+                        {{ form.yetkili_kisi }}
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon</label>
+                        {{ form.telefon }}
+                    </div>
+                    <div class="form-group">
+                        <label>E-posta</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-group full">
+                        <label>Adres</label>
+                        {{ form.adres }}
+                    </div>
+                </div>
+
+                <div class="section-title" style="margin-bottom:16px;">Kira Detayları</div>
+                <div class="form-grid" style="margin-bottom: 24px;">
+                    <div class="form-group">
+                        <label>Kira Başlangıç Tarihi *</label>
+                        {{ form.kira_baslangic_tarihi }}
+                        {% if form.kira_baslangic_tarihi.errors %}<span style="color:var(--red); font-size:11px;">{{ form.kira_baslangic_tarihi.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Kira Bitiş Tarihi (opsiyonel)</label>
+                        {{ form.kira_bitis_tarihi }}
+                    </div>
+                    <div class="form-group">
+                        <label>Aylık Kira Tutarı (₺) *</label>
+                        {{ form.aylik_kira_tutari }}
+                        {% if form.aylik_kira_tutari.errors %}<span style="color:var(--red); font-size:11px;">{{ form.aylik_kira_tutari.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Depozit (₺)</label>
+                        {{ form.depozit }}
+                    </div>
+                    <div class="form-group">
+                        <label>Kira Ödeme Günü (ayın kaçı)</label>
+                        {{ form.kira_gunu }}
+                    </div>
+                    <div class="form-group">
+                        <label>Sözleşme Dosyası</label>
+                        {{ form.sozlesme }}
+                        {% if kiraci.sozlesme %}
+                        <a href="{{ kiraci.sozlesme.url }}" target="_blank" style="font-size:11px; color: var(--accent);">📄 Mevcut sözleşme</a>
+                        {% endif %}
+                    </div>
+                    <div class="form-group full">
+                        <label>Notlar</label>
+                        {{ form.notlar }}
+                    </div>
+                    <div class="form-group">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                            {{ form.aktif }} Aktif Kiracı
+                        </label>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+                    {% if kiraci %}
+                    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
+                    {% else %}
+                    <a href="{% url 'kiraci_listesi' %}" class="btn btn-ghost">İptal</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
