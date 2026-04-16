@@ -190,10 +190,10 @@
             .content { padding: 12px; }
 
             .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-            .stat-card { padding: 12px 14px; }
-            .stat-value { font-size: 15px !important; }
+            .stat-card { padding: 10px 12px; }
+            .stat-value { font-size: 14px !important; }
             .stat-label { font-size: 11px; }
-            .stat-sub { font-size: 11px; }
+            .stat-sub { font-size: 10px; }
 
             .card-header { padding: 12px 14px; flex-wrap: wrap; gap: 6px; }
             .card-title { font-size: 13px; }
@@ -231,12 +231,18 @@
 
             /* Sil onay sayfaları */
             .sil-box { max-width: 100% !important; }
+
+            .desktop-only { display: none !important; }
+            .mobile-only { display: block !important; }
         }
 
         @media (max-width: 400px) {
             .stats-grid { grid-template-columns: 1fr; }
-            .topbar-actions .btn-ghost { display: none; } /* Çok dar ekranda sadece ana buton */
+            .topbar-actions .btn-ghost { display: none; }
         }
+
+        .mobile-only { display: none; }
+        .desktop-only { display: block; }
 
         /* ─── Components ─── */
         .btn {
@@ -279,7 +285,7 @@
         /* Stat Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
             margin-bottom: 28px;
         }
