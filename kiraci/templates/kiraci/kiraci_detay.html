@@ -3,8 +3,8 @@
 {% block title %}{{ kiraci.firma_adi }} — KiracıTakip{% endblock %}
 {% block topbar_title %}{{ kiraci.firma_adi }}{% endblock %}
 {% block topbar_actions %}
-    <a href="{% url 'kiraci_excel' kiraci.pk %}" class="btn btn-ghost btn-sm">📥</a>
-    <a href="{% url 'kiraci_duzenle' kiraci.pk %}" class="btn btn-ghost btn-sm">✏️</a>
+    <a href="{% url 'kiraci_excel' kiraci.pk %}" class="btn btn-ghost btn-sm">Excel İndir</a>
+    <a href="{% url 'kiraci_duzenle' kiraci.pk %}" class="btn btn-ghost btn-sm"> Düzenle</a>
     <a href="{% url 'odeme_ekle' kiraci.pk %}" class="btn btn-primary btn-sm">+ Ödeme</a>
 {% endblock %}
 
@@ -225,8 +225,8 @@
             <div class="pay-desktop-sub">
                 <div style="font-size:11px; color:var(--text3);">{{ odeme.odeme_tarihi|date:"d.m.Y" }}</div>
                 <div>
-                    {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
-                    {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
+                    {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green"> Resmi</span>
+                    {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow"> Gayri Resmi</span>
                     {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
                     {% if odeme.aciklama %}<span style="font-size:11px; color:var(--text3); margin-left:6px;">{{ odeme.aciklama }}</span>{% endif %}
                 </div>
@@ -247,7 +247,7 @@
                 <span class="month-tag">{{ item.ay_adi }} {{ item.yil }}</span>
                 <div style="display:flex; align-items:center; gap:8px;">
                     {% if item.odendi %}<span class="badge badge-green">✓</span>
-                    {% elif item.odenen > 0 %}<span class="badge badge-yellow">⚡</span>
+                    
                     {% else %}<span class="badge badge-red">✗</span>{% endif %}
                     <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
                 </div>
@@ -288,7 +288,7 @@
 
 <!-- Alt işlemler -->
 <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-    <a href="{% url 'kiraci_sil' kiraci.pk %}" class="btn btn-danger btn-sm">🗑 Kiracıyı Sil</a>
+    <a href="{% url 'kiraci_sil' kiraci.pk %}" class="btn btn-danger btn-sm"> Kiracıyı Sil</a>
 </div>
 
 {% endblock %}

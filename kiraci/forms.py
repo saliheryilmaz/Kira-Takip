@@ -86,6 +86,7 @@ class OdemeForm(forms.ModelForm):
         if not self.instance.pk:
             self.fields['yil'].initial = bugun.year
             self.fields['ay'].initial = bugun.month
-            self.fields['odeme_tarihi'].initial = bugun
+            self.fields['odeme_tarihi'].initial = bugun.strftime('%Y-%m-%d')
+            self.fields['odeme_tarihi'].widget.attrs['value'] = bugun.strftime('%Y-%m-%d')
             if kiraci:
                 self.fields['odenen_tutar'].initial = kiraci.aylik_kira_tutari

@@ -172,9 +172,9 @@
             </div>
             <div>
                 {% if item.odemeler %}{% for o in item.odemeler %}
-                    {% if o.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
-                    {% elif o.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
-                    {% elif o.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+                    {% if o.odeme_turu == 'resmi' %}<span class="badge badge-green"> Resmi</span>
+                    {% elif o.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow"> Gayri Resmi</span>
+                    {% elif o.odeme_turu == 'elden' %}<span class="badge badge-blue"> Elden</span>{% endif %}
                 {% endfor %}{% else %}<span class="badge badge-red">✗ Yok</span>{% endif %}
             </div>
             <div>
@@ -188,9 +188,9 @@
             <div class="amount text-green">{{ odeme.odenen_tutar|para }} ₺</div>
             <div></div>
             <div>
-                {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
-                {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
-                {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+                {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green"> Resmi</span>
+                {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow"> Gayri Resmi</span>
+                {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue"> Elden</span>{% endif %}
             </div>
             <div><a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">✏️</a></div>
         </div>
@@ -217,9 +217,9 @@
             {% for odeme in item.odemeler %}
             <div class="pay-mobile-sub">
                 <div>
-                    {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green">🏦 Resmi</span>
-                    {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow">📝 Gayri Resmi</span>
-                    {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue">💵 Elden</span>{% endif %}
+                    {% if odeme.odeme_turu == 'resmi' %}<span class="badge badge-green"> Resmi</span>
+                    {% elif odeme.odeme_turu == 'gayri_resmi' %}<span class="badge badge-yellow"> Gayri Resmi</span>
+                    {% elif odeme.odeme_turu == 'elden' %}<span class="badge badge-blue"> Elden</span>{% endif %}
                     <span style="font-size:11px; color:var(--text3); margin-left:6px;">{{ odeme.odeme_tarihi|date:"d.m.Y" }}</span>
                 </div>
                 <div style="display:flex; align-items:center; gap:8px;">
