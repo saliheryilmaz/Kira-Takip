@@ -1,0 +1,61 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}{% if duzenleme %}Ödeme Düzenle{% else %}Ödeme Ekle{% endif %} — {{ kiraci.firma_adi }}{% endblock %}
+{% block topbar_title %}{% if duzenleme %}Ödeme Düzenle{% else %}Ödeme Ekle{% endif %}{% endblock %}
+{% block topbar_actions %}
+    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">&#8592; Geri</a>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:520px; width:100%;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{% if duzenleme %}Ödeme Düzenle{% else %}Yeni Ödeme Kaydı{% endif %}</span>
+            <span class="badge badge-blue">{{ kiraci.firma_adi }}</span>
+        </div>
+        <div style="padding:24px;">
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-grid" style="margin-bottom:18px;">
+                    <div class="form-group">
+                        <label>Yıl *</label>
+                        {{ form.yil }}
+                        {% if form.yil.errors %}<span style="color:var(--red); font-size:11px;">{{ form.yil.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Ay *</label>
+                        {{ form.ay }}
+                        {% if form.ay.errors %}<span style="color:var(--red); font-size:11px;">{{ form.ay.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Ödenen Tutar (₺) *</label>
+                        {{ form.odenen_tutar }}
+                        <span style="font-size:11px; color:var(--text3);">Beklenen: {{ kiraci.aylik_kira_tutari|para }} ₺</span>
+                        {% if form.odenen_tutar.errors %}<span style="color:var(--red); font-size:11px;">{{ form.odenen_tutar.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Ödeme Tarihi</label>
+                        {{ form.odeme_tarihi }}
+                    </div>
+                </div>
+
+                {{ form.odeme_turu }}
+
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label>Açıklama <span style="font-weight:400; color:var(--text3);">(opsiyonel)</span></label>
+                    {{ form.aciklama }}
+                </div>
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-error" style="margin-bottom:16px;">{{ form.non_field_errors.0 }}</div>
+                {% endif %}
+
+                <div style="display:flex; gap:10px;">
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                    <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

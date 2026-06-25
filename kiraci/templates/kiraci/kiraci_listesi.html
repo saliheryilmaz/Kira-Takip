@@ -1,0 +1,363 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}Ana Sayfa — KiracıTakip{% endblock %}
+{% block topbar_title %}Ana Sayfa{% endblock %}
+{% block topbar_actions %}
+    <a href="{% url 'kiraci_ekle' %}" class="btn btn-primary btn-sm">+ Yeni Kiracı</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.grafik-grid {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.grafik-card { min-height: 260px; }
+
+@media (max-width: 900px) {
+    .grafik-grid { grid-template-columns: 1fr; }
+    .grafik-card { min-height: auto; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- İstatistikler -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Aktif Kiracı</div>
+        <div class="stat-value blue">{{ aktif_sayisi }}</div>
+        <div class="stat-sub">toplam kiracı</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Beklenen</div>
+        <div class="stat-value amount">{{ toplam_beklenen|para }} ₺</div>
+        <div class="stat-sub">kümülatif toplam</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Tahsilat</div>
+        <div class="stat-value green amount">{{ toplam_odenen|para }} ₺</div>
+        <div class="stat-sub">alınan ödeme</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Alacak</div>
+        <div class="stat-value {% if toplam_borc > 0 %}red{% else %}green{% endif %} amount">{{ toplam_borc|para }} ₺</div>
+        <div class="stat-sub">bekleyen tahsilat</div>
+    </div>
+</div>
+
+<!-- Bu ay ödeme bekleyenler -->
+{% if bu_ay_odemeyen %}
+<div class="card mb-4" style="border-color: rgba(217,119,6,0.3);">
+    <div class="card-header" style="background: var(--yellow-light); border-bottom-color: rgba(217,119,6,0.2);">
+        <span class="card-title" style="color: var(--yellow);">Bu Ay Ödeme Bekleyenler</span>
+    </div>
+    <div style="padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 8px;">
+        {% for k in bu_ay_odemeyen %}
+            <a href="{% url 'kiraci_detay' k.pk %}" class="badge badge-yellow" style="font-size:12px; padding: 5px 12px; font-weight:600;">
+                {{ k.firma_adi }} · {{ k.aylik_kira_tutari|para }} ₺
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Grafikler -->
+<div class="grafik-grid">
+
+    <!-- Çizgi Grafik: Son 12 Ay Tahsilat -->
+    <div class="card grafik-card">
+        <div class="card-header">
+            <span class="card-title">Aylık Tahsilat (Son 12 Ay)</span>
+        </div>
+        <div style="padding:14px 16px 10px;">
+            <canvas id="aylikChart" height="130"></canvas>
+        </div>
+    </div>
+
+    <!-- Sütun Grafik: Yıllık Tahsilat -->
+    <div class="card grafik-card">
+        <div class="card-header">
+            <span class="card-title">Yıllık Tahsilat</span>
+        </div>
+        <div style="padding:14px 16px 10px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <canvas id="yillikChart" height="130" style="width:100%;"></canvas>
+        </div>
+    </div>
+
+</div>
+
+{% if kiraci_borc_listesi %}
+<!-- Kiracı Bazlı Alacak Grafiği -->
+<div class="card" style="margin-bottom:24px;">
+    <div class="card-header">
+        <span class="card-title">Kiracı Bazlı Toplam Alacak</span>
+    </div>
+    <div style="padding:20px 16px 12px;">
+        <canvas id="borcChart" height="{% if kiraci_borc_listesi|length > 4 %}200{% else %}140{% endif %}"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<!-- Kiracı Listesi -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Tüm Kiracılar</span>
+        <a href="{% url 'aylik_ozet' %}" class="btn btn-ghost btn-sm">Aylık Görünüm</a>
+    </div>
+
+    {% if kiraciler %}
+    <!-- Desktop Tablo -->
+    <div class="desktop-only">
+        <table>
+            <thead>
+                <tr>
+                    <th>Firma / Kişi</th>
+                    <th>Aylık Kira</th>
+                    <th>Başlangıç</th>
+                    <th>Beklenen</th>
+                    <th>Ödenen</th>
+                    <th>Alacak</th>
+                    <th>Durum</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kiraci in kiraciler %}
+                <tr>
+                    <td data-label="Firma">
+                        <div class="firm-name">{{ kiraci.firma_adi }}</div>
+                        {% if kiraci.yetkili_kisi %}<div class="firm-sub">{{ kiraci.yetkili_kisi }}</div>{% endif %}
+                    </td>
+                    <td data-label="Aylık Kira"><span class="amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span></td>
+                    <td data-label="Başlangıç" class="text-muted">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}</td>
+                    <td data-label="Beklenen"><span class="amount">{{ kiraci.toplam_beklenen|para }} ₺</span></td>
+                    <td data-label="Ödenen"><span class="amount text-green">{{ kiraci.toplam_odenen|para }} ₺</span></td>
+                    <td data-label="Alacak">
+                        {% with borc=kiraci.toplam_borc %}
+                        <span class="amount {% if borc > 0 %}text-red{% else %}text-green{% endif %}">{{ borc|para }} ₺</span>
+                        {% endwith %}
+                    </td>
+                    <td data-label="Durum">
+                        {% if kiraci.aktif %}<span class="badge badge-green">Aktif</span>
+                        {% else %}<span class="badge badge-gray">Pasif</span>{% endif %}
+                    </td>
+                    <td><a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">Detay</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Mobil Kart Listesi -->
+    <div class="mobile-only" style="padding: 12px;">
+        {% for kiraci in kiraciler %}
+        <a href="{% url 'kiraci_detay' kiraci.pk %}" style="text-decoration:none; display:block; margin-bottom:10px;">
+            <div style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; box-shadow:var(--shadow);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                    <div>
+                        <div style="font-size:15px; font-weight:700; color:var(--text); letter-spacing:-0.01em;">{{ kiraci.firma_adi }}</div>
+                        {% if kiraci.yetkili_kisi %}<div style="font-size:12px; color:var(--text3); margin-top:2px;">{{ kiraci.yetkili_kisi }}</div>{% endif %}
+                    </div>
+                    {% if kiraci.aktif %}<span class="badge badge-green">Aktif</span>
+                    {% else %}<span class="badge badge-gray">Pasif</span>{% endif %}
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div>
+                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Aylık Kira</div>
+                        <div class="amount text-blue" style="font-size:14px;">{{ kiraci.aylik_kira_tutari|para }} ₺</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Ödenen</div>
+                        <div class="amount text-green" style="font-size:14px;">{{ kiraci.toplam_odenen|para }} ₺</div>
+                    </div>
+                    <div>
+                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Alacak</div>
+                        {% with borc=kiraci.toplam_borc %}
+                        <div class="amount" style="font-size:14px; color:{% if borc > 0 %}var(--red){% else %}var(--green){% endif %};">{{ borc|para }} ₺</div>
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">&#127968;</div>
+        <p>Henüz kiracı eklenmemiş.</p>
+        <a href="{% url 'kiraci_ekle' %}" class="btn btn-primary">İlk Kiracıyı Ekle</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ─── Veri ───
+const aylar      = {{ grafik_aylar_json|safe }};
+const ödenenler  = {{ grafik_odenen_json|safe }};
+const yillar     = {{ grafik_yillar_json|safe }};
+const yillikler  = {{ grafik_yillik_json|safe }};
+const kiraciBorc = {{ kiraci_borc_json|safe }};
+
+Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+Chart.defaults.font.size = 12;
+Chart.defaults.color = '#9aa5b4';
+
+// ─── 1. Çizgi Grafik: Aylık Tahsilat ───
+const ctx1 = document.getElementById('aylikChart').getContext('2d');
+new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: aylar,
+        datasets: [{
+            label: 'Tahsilat',
+            data: ödenenler,
+            borderColor: 'rgba(5,150,105,0.9)',
+            backgroundColor: 'rgba(5,150,105,0.08)',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: 'rgba(5,150,105,0.9)',
+            pointHoverRadius: 6,
+            tension: 0.35,
+            fill: true,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.parsed.y.toLocaleString('tr-TR')} ₺`
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { font: { size: 11 } }
+            },
+            y: {
+                grid: { color: '#e2e6ea' },
+                border: { display: false },
+                ticks: {
+                    font: { size: 11 },
+                    callback: v => v === 0 ? '0' : (v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+                }
+            }
+        }
+    }
+});
+
+// ─── 2. Sütun Grafik: Yıllık Tahsilat ───
+const ctx2 = document.getElementById('yillikChart').getContext('2d');
+new Chart(ctx2, {
+    type: 'bar',
+    data: {
+        labels: yillar,
+        datasets: [{
+            label: 'Yıllık Tahsilat',
+            data: yillikler,
+            backgroundColor: [
+                'rgba(37,99,235,0.15)',
+                'rgba(37,99,235,0.25)',
+                'rgba(37,99,235,0.7)',
+            ],
+            borderColor: [
+                'rgba(37,99,235,0.5)',
+                'rgba(37,99,235,0.7)',
+                'rgba(37,99,235,1)',
+            ],
+            borderWidth: 1.5,
+            borderRadius: 8,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: ctx => ` ${ctx.parsed.y.toLocaleString('tr-TR')} ₺`
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                border: { display: false },
+                ticks: { font: { size: 13, weight: '600' } }
+            },
+            y: {
+                grid: { color: '#e2e6ea' },
+                border: { display: false },
+                ticks: {
+                    font: { size: 11 },
+                    callback: v => v === 0 ? '0' : (v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+                }
+            }
+        }
+    }
+});
+
+// ─── 3. Yatay Çubuk: Kiracı Bazlı Alacak ───
+if (kiraciBorc.length > 0) {
+    const ctx3 = document.getElementById('borcChart').getContext('2d');
+    new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: kiraciBorc.map(k => k.firma),
+            datasets: [{
+                label: 'Toplam Alacak',
+                data: kiraciBorc.map(k => k.borc),
+                backgroundColor: 'rgba(229,62,62,0.18)',
+                borderColor: 'rgba(229,62,62,0.7)',
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` Alacak: ${ctx.parsed.x.toLocaleString('tr-TR')} ₺`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: '#e2e6ea' },
+                    border: { display: false },
+                    ticks: {
+                        font: { size: 11 },
+                        callback: v => v === 0 ? '0' : (v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { font: { size: 12 } }
+                }
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

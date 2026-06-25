@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiracıTakip</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0a0c0f; color: #e8edf2; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .box { background: #111418; border: 1px solid #1f2630; border-radius: 16px; padding: 40px 32px; width: 100%; max-width: 400px; text-align: center; }
+        .icon { font-size: 48px; margin-bottom: 16px; }
+        .mesaj { font-size: 15px; line-height: 1.6; color: #e8edf2; }
+        .basari { color: #00c896; }
+        .bilgi { color: #8a9ab0; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <div class="icon">{% if tur == 'basari' %}✅{% else %}ℹ️{% endif %}</div>
+        <div class="mesaj {{ tur }}">{{ mesaj }}</div>
+    </div>
+</body>
+</html>

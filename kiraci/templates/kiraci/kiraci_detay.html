@@ -1,0 +1,275 @@
+{% extends 'kiraci/base.html' %}
+{% load para_filtre %}
+{% block title %}{{ kiraci.firma_adi }} — KiracıTakip{% endblock %}
+{% block topbar_title %}{{ kiraci.firma_adi }}{% endblock %}
+{% block topbar_actions %}
+    <a href="{% url 'kiraci_excel' kiraci.pk %}" class="btn btn-ghost btn-sm">Excel</a>
+    <a href="{% url 'kiraci_duzenle' kiraci.pk %}" class="btn btn-ghost btn-sm">Düzenle</a>
+    <a href="{% url 'odeme_ekle' kiraci.pk %}" class="btn btn-primary btn-sm">+ Ödeme</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Üst bilgi şeridi */
+.kiraci-header {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.kiraci-header-left { display: flex; flex-direction: column; gap: 3px; }
+.kiraci-header-right { display: flex; gap: 24px; flex-wrap: wrap; }
+
+.kh-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+.kh-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; }
+.kh-value { font-size: 15px; font-weight: 700; color: var(--text); }
+
+/* Stat şerit */
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.stat-strip-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 12px 16px;
+    box-shadow: var(--shadow);
+}
+.stat-strip-card .stat-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+.stat-strip-card .stat-val   { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+
+.pay-header-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 120px 130px 130px 170px;
+    gap: 10px;
+    background: var(--bg3);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+}
+.pay-header-row span {
+    font-size: 10px; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
+}
+.pay-row-grid {
+    display: grid;
+    grid-template-columns: 130px 1fr 120px 130px 130px 170px;
+    gap: 10px;
+    align-items: center;
+    padding: 13px 20px;
+}
+
+@media (max-width: 768px) {
+    .kiraci-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .kiraci-header-right { gap: 16px; }
+    .kh-meta { align-items: flex-start; }
+    .stat-strip { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .stat-strip-card { padding: 10px 12px; }
+    .stat-strip-card .stat-val { font-size: 15px; }
+    .pay-header-row { display: none; }
+    .pay-row-desktop { display: none !important; }
+}
+@media (max-width: 480px) {
+    .stat-strip { grid-template-columns: 1fr; }
+}
+@media (min-width: 769px) {
+    .pay-row-mobile { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Kiracı Başlık Şeridi -->
+<div class="kiraci-header">
+    <div class="kiraci-header-left">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:17px; font-weight:800; color:var(--text); letter-spacing:-0.02em;">{{ kiraci.firma_adi }}</span>
+            {% if kiraci.aktif %}<span class="badge badge-green">Aktif</span>
+            {% else %}<span class="badge badge-gray">Pasif</span>{% endif %}
+        </div>
+        {% if kiraci.yetkili_kisi %}<span style="font-size:12px; color:var(--text3);">{{ kiraci.yetkili_kisi }}</span>{% endif %}
+    </div>
+    <div class="kiraci-header-right">
+        <div class="kh-meta">
+            <span class="kh-label">Aylık Kira</span>
+            <span class="kh-value text-blue amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span>
+            <span style="font-size:10px; color:var(--text3);">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}'den beri</span>
+        </div>
+        {% if kiraci.depozit %}
+        <div class="kh-meta">
+            <span class="kh-label">Depozit</span>
+            <span class="kh-value text-yellow amount">{{ kiraci.depozit|para }} ₺</span>
+        </div>
+        {% endif %}
+        {% if kiraci.telefon %}
+        <div class="kh-meta">
+            <span class="kh-label">Telefon</span>
+            <span class="kh-value" style="font-size:13px;">{{ kiraci.telefon }}</span>
+        </div>
+        {% endif %}
+        {% if kiraci.sozlesme %}
+        <div class="kh-meta" style="justify-content:center;">
+            <span class="kh-label">Sözleşme</span>
+            <a href="{{ kiraci.sozlesme.url }}" target="_blank" class="btn btn-ghost btn-sm" style="margin-top:2px;">Aç</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Finansal Özet (kompakt) -->
+<div class="stat-strip">
+    <div class="stat-strip-card">
+        <div class="stat-label">Toplam Beklenen</div>
+        <div class="stat-val amount">{{ toplam_beklenen|para }} ₺</div>
+    </div>
+    <div class="stat-strip-card">
+        <div class="stat-label">Toplam Tahsilat</div>
+        <div class="stat-val amount text-green">{{ toplam_odenen|para }} ₺</div>
+    </div>
+    <div class="stat-strip-card">
+        <div class="stat-label">Toplam Alacak</div>
+        <div class="stat-val amount {% if toplam_borc > 0 %}text-red{% else %}text-green{% endif %}">{{ toplam_borc|para }} ₺</div>
+    </div>
+</div>
+
+{% if kiraci.adres or kiraci.email or kiraci.notlar %}
+<!-- Ek Detaylar -->
+<div class="card mb-4">
+    <div class="card-header"><span class="card-title">Notlar ve Adres</span></div>
+    <div style="padding:14px 18px; display:flex; gap:24px; flex-wrap:wrap;">
+        {% if kiraci.email %}
+        <div>
+            <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:3px;">E-posta</div>
+            <div style="font-size:13px; color:var(--text2);">{{ kiraci.email }}</div>
+        </div>
+        {% endif %}
+        {% if kiraci.adres %}
+        <div>
+            <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:3px;">Adres</div>
+            <div style="font-size:13px; color:var(--text2); max-width:300px;">{{ kiraci.adres }}</div>
+        </div>
+        {% endif %}
+        {% if kiraci.notlar %}
+        <div style="width:100%; {% if kiraci.email or kiraci.adres %}border-top:1px solid var(--border); padding-top:12px; margin-top:2px;{% endif %}">
+            <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:3px;">Notlar</div>
+            <div style="font-size:13px; color:var(--text2); white-space:pre-line;">{{ kiraci.notlar }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Ödeme Geçmişi -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Ödeme Geçmişi</span>
+        <a href="{% url 'odeme_ekle' kiraci.pk %}" class="btn btn-primary btn-sm">+ Ödeme Ekle</a>
+    </div>
+
+    <!-- Kolon başlıkları (masaüstü) -->
+    <div class="pay-header-row">
+        <span>Dönem</span>
+        <span>Durum</span>
+        <span>Beklenen</span>
+        <span>Ödenen</span>
+        <span>Fark</span>
+        <span>İşlem</span>
+    </div>
+
+    {% for item in ay_listesi %}
+    <div style="border-bottom:1px solid var(--border);">
+
+        <!-- MASAÜSTÜ satır -->
+        <div class="pay-row-desktop pay-row-grid">
+            <div style="font-size:13px; font-weight:600; color:var(--text);">{{ item.ay_adi }} {{ item.yil }}</div>
+            <div>
+                {% if item.odendi %}<span class="badge badge-green">Ödendi</span>
+                {% elif item.odenen > 0 %}<span class="badge badge-yellow">Kısmi</span>
+                {% else %}<span class="badge badge-red">Ödenmedi</span>{% endif %}
+            </div>
+            <div class="amount" style="font-size:13px;">{{ item.beklenen|para }} ₺</div>
+            <div>
+                {% if item.odenen > 0 %}<span class="amount text-green" style="font-size:13px;">{{ item.odenen|para }} ₺</span>
+                {% else %}<span class="text-muted" style="font-size:13px;">—</span>{% endif %}
+            </div>
+            <div>
+                {% if item.eksik > 0 %}<span class="amount text-red" style="font-size:13px;">-{{ item.eksik|para }} ₺</span>
+                {% elif item.odenen > 0 %}<span class="text-green" style="font-size:13px; font-weight:600;">Tam</span>
+                {% else %}<span class="amount text-red" style="font-size:13px;">-{{ item.beklenen|para }} ₺</span>{% endif %}
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:nowrap; align-items:center;">
+                <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
+                {% for odeme in item.odemeler %}
+                <a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">Düzenle</a>
+                <a href="{% url 'odeme_sil' odeme.pk %}" class="btn btn-danger btn-sm">Sil</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- MOBİL satır -->
+        <div class="pay-row-mobile" style="padding:12px 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <span style="font-size:14px; font-weight:700; color:var(--text);">{{ item.ay_adi }} {{ item.yil }}</span>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    {% if item.odendi %}<span class="badge badge-green">Ödendi</span>
+                    {% elif item.odenen > 0 %}<span class="badge badge-yellow">Kısmi</span>
+                    {% else %}<span class="badge badge-red">Ödenmedi</span>{% endif %}
+                    {% if not item.odemeler %}
+                    <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text2); margin-bottom:6px;">
+                <span>Beklenen: <span class="amount" style="color:var(--text);">{{ item.beklenen|para }} ₺</span></span>
+                <span>
+                    {% if item.eksik > 0 %}<span class="text-red amount">-{{ item.eksik|para }} ₺</span>
+                    {% elif item.odenen > 0 %}<span class="text-green" style="font-weight:600;">Tam</span>
+                    {% else %}<span class="text-red">Ödenmedi</span>{% endif %}
+                </span>
+            </div>
+            {% for odeme in item.odemeler %}
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px dashed var(--border); font-size:13px;">
+                <div>
+                    <span class="badge badge-blue" style="font-size:11px;">{{ odeme.odeme_tarihi|date:"d.m.Y" }}</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <span class="amount text-green">{{ odeme.odenen_tutar|para }} ₺</span>
+                    <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
+                    <a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">Düz.</a>
+                    <a href="{% url 'odeme_sil' odeme.pk %}" class="btn btn-danger btn-sm">Sil</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+    {% empty %}
+    <div class="empty-state">
+        <div class="icon">&#128179;</div>
+        <p>Henüz ödeme kaydı yok.</p>
+        <a href="{% url 'odeme_ekle' kiraci.pk %}" class="btn btn-primary">İlk Ödemeyi Ekle</a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Alt İşlemler -->
+<div style="margin-top:18px; display:flex; justify-content:flex-end;">
+    <a href="{% url 'kiraci_sil' kiraci.pk %}" class="btn btn-danger btn-sm">Kiracıyı Sil</a>
+</div>
+
+{% endblock %}
