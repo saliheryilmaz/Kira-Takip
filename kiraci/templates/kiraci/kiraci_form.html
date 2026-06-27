@@ -57,9 +57,14 @@
                         {{ form.kira_bitis_tarihi }}
                     </div>
                     <div class="form-group">
-                        <label>Aylık Kira Tutarı (₺) *</label>
+                        <label>Aylık Kira Tutarı (₺) <span style="color:var(--text3); font-weight:400;">(opsiyonel)</span></label>
                         {{ form.aylik_kira_tutari }}
                         {% if form.aylik_kira_tutari.errors %}<span style="color:var(--red); font-size:11px;">{{ form.aylik_kira_tutari.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label>Yıllık Kira Tutarı (₺) <span style="color:var(--text3); font-weight:400;">(opsiyonel)</span></label>
+                        {{ form.yillik_kira_tutari }}
+                        <span style="font-size:11px; color:var(--text3);">Yıllık peşin ödeme varsa girin</span>
                     </div>
                     <div class="form-group">
                         <label>Depozit (₺) <span style="color:var(--text3); font-weight:400;">(opsiyonel)</span></label>
@@ -88,7 +93,14 @@
                 </div>
 
                 <div style="display:flex; gap:12px;">
-                    <button type="submit" class="btn btn-primary">💾 Kaydet</button>
+                    {% if form.non_field_errors %}
+                    <div style="width:100%; margin-bottom:12px;">
+                        {% for error in form.non_field_errors %}
+                        <span style="color:var(--red); font-size:12px;">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
                     {% if kiraci %}
                     <a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost">İptal</a>
                     {% else %}

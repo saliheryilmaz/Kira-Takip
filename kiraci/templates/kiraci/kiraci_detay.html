@@ -107,9 +107,15 @@
     <div class="kiraci-header-right">
         <div class="kh-meta">
             <span class="kh-label">Aylık Kira</span>
-            <span class="kh-value text-blue amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span>
+            <span class="kh-value text-blue amount">{% if kiraci.aylik_kira_tutari %}{{ kiraci.aylik_kira_tutari|para }} ₺{% else %}—{% endif %}</span>
             <span style="font-size:10px; color:var(--text3);">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}'den beri</span>
         </div>
+        {% if kiraci.yillik_kira_tutari %}
+        <div class="kh-meta">
+            <span class="kh-label">Yıllık Kira</span>
+            <span class="kh-value text-blue amount">{{ kiraci.yillik_kira_tutari|para }} ₺</span>
+        </div>
+        {% endif %}
         {% if kiraci.depozit %}
         <div class="kh-meta">
             <span class="kh-label">Depozit</span>
@@ -131,21 +137,7 @@
     </div>
 </div>
 
-<!-- Finansal Özet (kompakt) -->
-<div class="stat-strip">
-    <div class="stat-strip-card">
-        <div class="stat-label">Toplam Beklenen</div>
-        <div class="stat-val amount">{{ toplam_beklenen|para }} ₺</div>
-    </div>
-    <div class="stat-strip-card">
-        <div class="stat-label">Toplam Tahsilat</div>
-        <div class="stat-val amount text-green">{{ toplam_odenen|para }} ₺</div>
-    </div>
-    <div class="stat-strip-card">
-        <div class="stat-label">Toplam Alacak</div>
-        <div class="stat-val amount {% if toplam_borc > 0 %}text-red{% else %}text-green{% endif %}">{{ toplam_borc|para }} ₺</div>
-    </div>
-</div>
+<!-- Finansal Özet kaldırıldı, Ödeme Geçmişi başlığına taşındı -->
 
 {% if kiraci.adres or kiraci.email or kiraci.notlar %}
 <!-- Ek Detaylar -->
@@ -176,8 +168,22 @@
 
 <!-- Ödeme Geçmişi -->
 <div class="card">
-    <div class="card-header">
+    <div class="card-header" style="flex-wrap:wrap; gap:10px;">
         <span class="card-title">Ödeme Geçmişi</span>
+        <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+            <div>
+                <span style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em;">Toplam Beklenen</span>
+                <div class="amount" style="font-size:14px; font-weight:700; color:var(--text);">{{ toplam_beklenen|para }} ₺</div>
+            </div>
+            <div>
+                <span style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em;">Toplam Tahsilat</span>
+                <div class="amount text-green" style="font-size:14px; font-weight:700;">{{ toplam_odenen|para }} ₺</div>
+            </div>
+            <div>
+                <span style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em;">Toplam Alacak</span>
+                <div class="amount {% if toplam_borc > 0 %}text-red{% else %}text-green{% endif %}" style="font-size:14px; font-weight:700;">{{ toplam_borc|para }} ₺</div>
+            </div>
+        </div>
         <a href="{% url 'odeme_ekle' kiraci.pk %}" class="btn btn-primary btn-sm">+ Ödeme Ekle</a>
     </div>
 
@@ -192,6 +198,7 @@
     </div>
 
     {% for item in ay_listesi %}
+    {% if item.odemeler %}
     <div style="border-bottom:1px solid var(--border);">
 
         <!-- MASAÜSTÜ satır -->
@@ -206,6 +213,9 @@
             <div>
                 {% if item.odenen > 0 %}<span class="amount text-green" style="font-size:13px;">{{ item.odenen|para }} ₺</span>
                 {% else %}<span class="text-muted" style="font-size:13px;">—</span>{% endif %}
+                {% for odeme in item.odemeler %}
+                    {% if odeme.aciklama %}<div style="font-size:11px; color:var(--text3); margin-top:2px;">{{ odeme.aciklama }}</div>{% endif %}
+                {% endfor %}
             </div>
             <div>
                 {% if item.eksik > 0 %}<span class="amount text-red" style="font-size:13px;">-{{ item.eksik|para }} ₺</span>
@@ -229,9 +239,7 @@
                     {% if item.odendi %}<span class="badge badge-green">Ödendi</span>
                     {% elif item.odenen > 0 %}<span class="badge badge-yellow">Kısmi</span>
                     {% else %}<span class="badge badge-red">Ödenmedi</span>{% endif %}
-                    {% if not item.odemeler %}
                     <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
-                    {% endif %}
                 </div>
             </div>
             <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text2); margin-bottom:6px;">
@@ -244,12 +252,12 @@
             </div>
             {% for odeme in item.odemeler %}
             <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px dashed var(--border); font-size:13px;">
-                <div>
+                <div style="display:flex; flex-direction:column; gap:2px;">
                     <span class="badge badge-blue" style="font-size:11px;">{{ odeme.odeme_tarihi|date:"d.m.Y" }}</span>
+                    {% if odeme.aciklama %}<span style="font-size:11px; color:var(--text3);">{{ odeme.aciklama }}</span>{% endif %}
                 </div>
                 <div style="display:flex; align-items:center; gap:6px;">
                     <span class="amount text-green">{{ odeme.odenen_tutar|para }} ₺</span>
-                    <a href="{% url 'odeme_ekle' kiraci.pk %}?yil={{ item.yil }}&ay={{ item.ay }}" class="btn btn-ghost btn-sm">+ Ekle</a>
                     <a href="{% url 'odeme_duzenle' odeme.pk %}" class="btn btn-ghost btn-sm">Düz.</a>
                     <a href="{% url 'odeme_sil' odeme.pk %}" class="btn btn-danger btn-sm">Sil</a>
                 </div>
@@ -258,6 +266,7 @@
         </div>
 
     </div>
+    {% endif %}
     {% empty %}
     <div class="empty-state">
         <div class="icon">&#128179;</div>

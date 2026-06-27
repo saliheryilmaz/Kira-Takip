@@ -32,7 +32,8 @@ class Kiraci(models.Model):
     adres = models.TextField(blank=True, verbose_name="Adres")
     kira_baslangic_tarihi = models.DateField(verbose_name="Kira Başlangıç Tarihi")
     kira_bitis_tarihi = models.DateField(null=True, blank=True, verbose_name="Kira Bitiş Tarihi")
-    aylik_kira_tutari = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Aylık Kira Tutarı (₺)")
+    aylik_kira_tutari = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Aylık Kira Tutarı (₺)")
+    yillik_kira_tutari = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, verbose_name="Yıllık Kira Tutarı (₺)")
     sozlesme = models.FileField(upload_to='sozlesmeler/', blank=True, null=True, verbose_name="Sözleşme Dosyası")
     depozit = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Depozit (₺)")
     notlar = models.TextField(blank=True, verbose_name="Notlar")
@@ -50,8 +51,25 @@ class Kiraci(models.Model):
         return self.firma_adi
 
     def _takip_baslangic(self):
-        """Ödeme takibinin başladığı ay — kaydedildiği ay."""
-        return self.olusturulma_tarihi.date().replace(day=1)
+        """Ödeme takibinin başladığı ay — kaydedildiği ay veya en eski ödeme, hangisi önceyse."""
+        kayit_ay = self.olusturulma_tarihi.date().replace(day=1)
+        en_eski = self.odemeler.order_by('yil', 'ay').first()
+        if en_eski:
+            odeme_ay = self.olusturulma_tarihi.date().replace(
+                year=en_eski.yil, month=en_eski.ay, day=1
+            )
+            return min(kayit_ay, odeme_ay)
+        return kayit_ay
+
+    def _donem_tutari(self):
+        """Bir ödeme döneminin beklenen tutarı. Yıllık varsa yıllık, yoksa aylık."""
+        if self.yillik_kira_tutari:
+            return self.yillik_kira_tutari
+        return self.aylik_kira_tutari or Decimal('0')
+
+    def _donem_ay_sayisi(self):
+        """Yıllık kirada 1 dönem = 12 ay, aylık kirada 1 dönem = 1 ay."""
+        return 12 if self.yillik_kira_tutari else 1
 
     def toplam_beklenen(self, bitis_yil=None, bitis_ay=None):
         """Kaydedildiği aydan bugüne kadar beklenen toplam kira tutarı."""
@@ -76,7 +94,16 @@ class Kiraci(models.Model):
             else:
                 current = current.replace(month=current.month + 1)
 
-        return self.aylik_kira_tutari * ay_sayisi
+        if self.yillik_kira_tutari:
+            # Yıllık: sözleşme başladığı andan itibaren tüm yıllık tutar beklenir
+            # Tam yıl + başlamış yıl varsa onu da say
+            tam_yil = ay_sayisi // 12
+            kalan_ay = ay_sayisi % 12
+            toplam = self.yillik_kira_tutari * tam_yil
+            if kalan_ay > 0:
+                toplam += self.yillik_kira_tutari  # başlamış yılın tamamı beklenir
+            return toplam if toplam > 0 else self.yillik_kira_tutari
+        return (self.aylik_kira_tutari or Decimal('0')) * ay_sayisi
 
     def toplam_odenen(self):
         return self.odemeler.aggregate(
@@ -90,28 +117,37 @@ class Kiraci(models.Model):
         return fark if fark > 0 else Decimal('0')
 
     def ay_listesi(self):
-        """Kaydedildiği aydan bugüne kadar tüm ayları döndür."""
+        """Kaydedildiği aydan en son ödemeye kadar tüm ayları döndür."""
         bugun = timezone.now().date()
-        aylar = []
         baslangic = self._takip_baslangic()
-        bitis = bugun.replace(day=1)
+
+        # Bitiş: bugün veya en son ödemenin ayı — hangisi daha ileriyse
+        son_odeme = self.odemeler.order_by('-yil', '-ay').first()
+        if son_odeme:
+            son_odeme_ay = bugun.replace(year=son_odeme.yil, month=son_odeme.ay, day=1)
+            bitis = max(bugun.replace(day=1), son_odeme_ay)
+        else:
+            bitis = bugun.replace(day=1)
 
         if baslangic > bitis:
             return []
 
+        aylar = []
         current = baslangic
         while current <= bitis:
             odemeler = self.odemeler.filter(yil=current.year, ay=current.month)
             odenen = odemeler.aggregate(t=models.Sum('odenen_tutar'))['t'] or Decimal('0')
+            beklenen = self._donem_tutari()
             aylar.append({
                 'yil': current.year,
                 'ay': current.month,
                 'ay_adi': self._ay_adi(current.month),
-                'beklenen': self.aylik_kira_tutari,
+                'beklenen': beklenen,
                 'odemeler': odemeler,
-                'odendi': odenen >= self.aylik_kira_tutari,
+                'odendi': odenen >= beklenen,
                 'odenen': odenen,
-                'eksik': max(self.aylik_kira_tutari - odenen, Decimal('0')),
+                'eksik': max(beklenen - odenen, Decimal('0')),
+                'yillik_mod': bool(self.yillik_kira_tutari),
             })
             if current.month == 12:
                 current = current.replace(year=current.year + 1, month=1)

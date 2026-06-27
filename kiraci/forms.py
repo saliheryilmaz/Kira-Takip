@@ -41,7 +41,7 @@ class KiraciForm(forms.ModelForm):
         fields = [
             'firma_adi', 'yetkili_kisi', 'telefon', 'email',
             'adres', 'kira_baslangic_tarihi', 'kira_bitis_tarihi',
-            'aylik_kira_tutari', 'depozit', 'kira_gunu',
+            'aylik_kira_tutari', 'yillik_kira_tutari', 'depozit', 'kira_gunu',
             'sozlesme', 'notlar', 'aktif'
         ]
         widgets = {
@@ -53,7 +53,7 @@ class KiraciForm(forms.ModelForm):
             'kira_baslangic_tarihi': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'kira_bitis_tarihi': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'aylik_kira_tutari': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
-            'depozit': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
+            'yillik_kira_tutari': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01', 'placeholder': 'Girilmezse aylık × 12'}),            'depozit': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
             'kira_gunu': forms.NumberInput(attrs={'class': 'form-input', 'min': 1, 'max': 28}),
             'sozlesme': forms.FileInput(attrs={'class': 'form-file'}),
             'notlar': forms.Textarea(attrs={'class': 'form-input', 'rows': 3}),
@@ -63,10 +63,20 @@ class KiraciForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.instance.pk:
-            # Yeni kiracıda başlangıç tarihi bugün olarak gelsin
             bugun = timezone.now().date().strftime('%Y-%m-%d')
             self.fields['kira_baslangic_tarihi'].widget.attrs['value'] = bugun
             self.fields['kira_baslangic_tarihi'].initial = bugun
+        # Her iki alan da opsiyonel — form seviyesinde required=False
+        self.fields['aylik_kira_tutari'].required = False
+        self.fields['yillik_kira_tutari'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        aylik = cleaned.get('aylik_kira_tutari')
+        yillik = cleaned.get('yillik_kira_tutari')
+        if not aylik and not yillik:
+            raise forms.ValidationError('Aylık veya yıllık kira tutarından en az birini girin.')
+        return cleaned
 
 
 class OdemeForm(forms.ModelForm):
@@ -98,4 +108,4 @@ class OdemeForm(forms.ModelForm):
             self.fields['odeme_tarihi'].widget.attrs['value'] = bugun.strftime('%Y-%m-%d')
             self.fields['odeme_turu'].initial = 'nakit'
             if kiraci:
-                self.fields['odenen_tutar'].initial = kiraci.aylik_kira_tutari
+                self.fields['odenen_tutar'].initial = kiraci._donem_tutari()

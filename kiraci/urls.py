@@ -24,7 +24,4 @@ urlpatterns = [
     # Bildirim yanıt
     path('bildirim/onayla/<str:token>/', views.odeme_onayla, name='odeme_onayla'),
     path('bildirim/reddet/<str:token>/', views.odeme_reddet, name='odeme_reddet'),
-
-    # Özet
-    path('aylik-ozet/', views.aylik_ozet, name='aylik_ozet'),
 ]

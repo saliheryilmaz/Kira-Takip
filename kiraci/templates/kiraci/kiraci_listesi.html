@@ -90,23 +90,10 @@
 
 </div>
 
-{% if kiraci_borc_listesi %}
-<!-- Kiracı Bazlı Alacak Grafiği -->
-<div class="card" style="margin-bottom:24px;">
-    <div class="card-header">
-        <span class="card-title">Kiracı Bazlı Toplam Alacak</span>
-    </div>
-    <div style="padding:20px 16px 12px;">
-        <canvas id="borcChart" height="{% if kiraci_borc_listesi|length > 4 %}200{% else %}140{% endif %}"></canvas>
-    </div>
-</div>
-{% endif %}
-
 <!-- Kiracı Listesi -->
 <div class="card">
     <div class="card-header">
         <span class="card-title">Tüm Kiracılar</span>
-        <a href="{% url 'aylik_ozet' %}" class="btn btn-ghost btn-sm">Aylık Görünüm</a>
     </div>
 
     {% if kiraciler %}
@@ -312,52 +299,5 @@ new Chart(ctx2, {
     }
 });
 
-// ─── 3. Yatay Çubuk: Kiracı Bazlı Alacak ───
-if (kiraciBorc.length > 0) {
-    const ctx3 = document.getElementById('borcChart').getContext('2d');
-    new Chart(ctx3, {
-        type: 'bar',
-        data: {
-            labels: kiraciBorc.map(k => k.firma),
-            datasets: [{
-                label: 'Toplam Alacak',
-                data: kiraciBorc.map(k => k.borc),
-                backgroundColor: 'rgba(229,62,62,0.18)',
-                borderColor: 'rgba(229,62,62,0.7)',
-                borderWidth: 1.5,
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` Alacak: ${ctx.parsed.x.toLocaleString('tr-TR')} ₺`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: '#e2e6ea' },
-                    border: { display: false },
-                    ticks: {
-                        font: { size: 11 },
-                        callback: v => v === 0 ? '0' : (v >= 1000 ? (v/1000).toFixed(0)+'K' : v)
-                    }
-                },
-                y: {
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: { font: { size: 12 } }
-                }
-            }
-        }
-    });
-}
 </script>
 {% endblock %}

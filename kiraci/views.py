@@ -266,7 +266,7 @@ def aylik_ozet(request):
     toplam_odenen = Decimal('0')
     for kiraci in kiraciler:
         odemeler = kiraci.odemeler.filter(yil=yil, ay=ay)
-        beklenen = kiraci.aylik_kira_tutari
+        beklenen = kiraci._donem_tutari()
         odenen = odemeler.aggregate(t=Sum('odenen_tutar'))['t'] or Decimal('0')
         toplam_beklenen += beklenen
         toplam_odenen += odenen
@@ -311,7 +311,7 @@ def odeme_onayla(request, token):
             kiraci=kiraci,
             yil=log.yil,
             ay=log.ay,
-            odenen_tutar=kiraci.aylik_kira_tutari,
+            odenen_tutar=kiraci._donem_tutari(),
             odeme_turu='elden',
             aciklama='WhatsApp/Email bildirimi üzerinden onaylandı.',
         )

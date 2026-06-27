@@ -535,9 +535,6 @@
             <a href="{% url 'kiraci_listesi' %}" class="nav-link {% if request.resolver_match.url_name == 'kiraci_listesi' %}active{% endif %}" onclick="closeSidebar()">
                 <span class="nav-icon">&#9776;</span> Ana Sayfa
             </a>
-            <a href="{% url 'aylik_ozet' %}" class="nav-link {% if request.resolver_match.url_name == 'aylik_ozet' %}active{% endif %}" onclick="closeSidebar()">
-                <span class="nav-icon">&#128197;</span> Aylık Özet
-            </a>
             <div class="nav-label">Kiracılar</div>
             <a href="{% url 'kiraci_ekle' %}" class="nav-link {% if request.resolver_match.url_name == 'kiraci_ekle' %}active{% endif %}" onclick="closeSidebar()">
                 <span class="nav-icon">+</span> Yeni Kiracı
