@@ -74,6 +74,12 @@ def kiraci_listesi(request):
     toplam_beklenen = sum(k.toplam_beklenen() for k in aktif_qs)
     toplam_odenen = sum(k.toplam_odenen() for k in aktif_qs)
     toplam_borc = sum(k.toplam_borc() for k in aktif_qs)
+    
+    # Yıllık beklenen: her kiracının aylık veya yıllık tutarından
+    yillik_beklenen = sum(
+        (k.yillik_kira_tutari or (k.aylik_kira_tutari * 12 if k.aylik_kira_tutari else Decimal('0')))
+        for k in aktif_qs
+    )
     bu_ay_odeme = Odeme.objects.filter(
         kiraci__user=request.user, yil=bugun.year, ay=bugun.month
     ).values_list('kiraci_id', flat=True)
@@ -127,6 +133,7 @@ def kiraci_listesi(request):
         'toplam_beklenen': toplam_beklenen,
         'toplam_odenen': toplam_odenen,
         'toplam_borc': toplam_borc,
+        'yillik_beklenen': yillik_beklenen,
         'bu_ay_odemeyen': bu_ay_odemeyen,
         'bugun': bugun,
         # Grafik verileri (JSON)

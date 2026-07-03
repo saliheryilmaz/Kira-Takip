@@ -33,9 +33,9 @@
         <div class="stat-sub">toplam kiracı</div>
     </div>
     <div class="stat-card">
-        <div class="stat-label">Beklenen</div>
-        <div class="stat-value amount">{{ toplam_beklenen|para }} ₺</div>
-        <div class="stat-sub">kümülatif toplam</div>
+        <div class="stat-label">Yıllık Beklenen</div>
+        <div class="stat-value amount">{{ yillik_beklenen|para }} ₺</div>
+        <div class="stat-sub">yıllık toplam kira</div>
     </div>
     <div class="stat-card">
         <div class="stat-label">Tahsilat</div>
@@ -105,7 +105,6 @@
                     <th>Firma / Kişi</th>
                     <th>Aylık Kira</th>
                     <th>Başlangıç</th>
-                    <th>Beklenen</th>
                     <th>Ödenen</th>
                     <th>Alacak</th>
                     <th>Durum</th>
@@ -121,7 +120,6 @@
                     </td>
                     <td data-label="Aylık Kira"><span class="amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span></td>
                     <td data-label="Başlangıç" class="text-muted">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}</td>
-                    <td data-label="Beklenen"><span class="amount">{{ kiraci.toplam_beklenen|para }} ₺</span></td>
                     <td data-label="Ödenen"><span class="amount text-green">{{ kiraci.toplam_odenen|para }} ₺</span></td>
                     <td data-label="Alacak">
                         {% with borc=kiraci.toplam_borc %}
