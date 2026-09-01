@@ -217,6 +217,24 @@ def kiraci_duzenle(request, pk):
                     gecerlilik = zam_tarihi.replace(day=1)
                 else:
                     gecerlilik = timezone.now().date().replace(day=1)
+
+                # Zam tarihinden önce tarihçe kaydı yoksa, eski tutarı en eski takip ayına yaz
+                # (zam öncesi aylara yanlış tutar uygulanmasını engeller)
+                onceki_kayit = kiraci.zam_gecmisi.filter(
+                    gecerlilik_tarihi__lt=gecerlilik
+                ).exists()
+                if not onceki_kayit and (eski_aylik or eski_yillik):
+                    baslangic_ay = kiraci._takip_baslangic()
+                    KiraZamGecmisi.objects.update_or_create(
+                        kiraci=kiraci,
+                        gecerlilik_tarihi=baslangic_ay,
+                        defaults={
+                            'aylik_kira_tutari': eski_aylik,
+                            'yillik_kira_tutari': eski_yillik,
+                            'aciklama': 'Zam öncesi başlangıç tutarı (otomatik)',
+                        }
+                    )
+
                 _zam_gecmisi_kaydet(kiraci, gecerlilik)
                 messages.success(request, f'Kiracı bilgileri güncellendi. Yeni kira tutarı {gecerlilik.strftime("%d.%m.%Y")} tarihinden itibaren geçerli.')
             else:

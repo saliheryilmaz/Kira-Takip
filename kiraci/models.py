@@ -83,10 +83,18 @@ class Kiraci(models.Model):
 
         if gecmis:
             if gecmis.yillik_kira_tutari:
-                return gecmis.yillik_kira_tutari, True   # (tutar, yillik_mod)
+                return gecmis.yillik_kira_tutari, True
             return gecmis.aylik_kira_tutari or Decimal('0'), False
 
-        # Tarihçe yoksa anlık değeri kullan
+        # O tarihten önce kayıt yoksa — en eski tarihçe kaydını kullan
+        # (zam öncesi aylara yanlışlıkla yeni tutar uygulanmasını engeller)
+        en_eski = self.zam_gecmisi.order_by('gecerlilik_tarihi').first()
+        if en_eski:
+            if en_eski.yillik_kira_tutari:
+                return en_eski.yillik_kira_tutari, True
+            return en_eski.aylik_kira_tutari or Decimal('0'), False
+
+        # Hiç tarihçe kaydı yoksa anlık değeri kullan (yeni eklenen kiracı)
         if self.yillik_kira_tutari:
             return self.yillik_kira_tutari, True
         return self.aylik_kira_tutari or Decimal('0'), False
