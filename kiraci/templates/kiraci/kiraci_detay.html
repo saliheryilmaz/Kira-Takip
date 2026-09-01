@@ -107,7 +107,7 @@
     <div class="kiraci-header-right">
         <div class="kh-meta">
             <span class="kh-label">Aylık Kira</span>
-            <span class="kh-value text-blue amount">{% if kiraci.aylik_kira_tutari %}{{ kiraci.aylik_kira_tutari|para }} ₺{% else %}—{% endif %}</span>
+            <span class="kh-value text-blue amount">{% if kiraci.guncel_kira_tutari %}{{ kiraci.guncel_kira_tutari|para }} ₺{% else %}—{% endif %}</span>
             <span style="font-size:10px; color:var(--text3);">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}'den beri</span>
         </div>
         {% if kiraci.yillik_kira_tutari %}

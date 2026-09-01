@@ -115,7 +115,13 @@
                         <div class="firm-name">{{ kiraci.firma_adi }}</div>
                         {% if kiraci.yetkili_kisi %}<div class="firm-sub">{{ kiraci.yetkili_kisi }}</div>{% endif %}
                     </td>
-                    <td data-label="Aylık Kira"><span class="amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span></td>
+                    <td data-label="Aylık Kira">
+                        {% if kiraci.guncel_kira_tutari %}
+                            <span class="amount">{{ kiraci.guncel_kira_tutari|para }} ₺</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
                     <td data-label="Alacak (Bu Ay)">
                         {% with borc=kiraci.bu_ay_borc %}
                         <span class="amount {% if borc > 0 %}text-red{% else %}text-green{% endif %}">{{ borc|para }} ₺</span>
@@ -139,7 +145,9 @@
                         {% if kiraci.yetkili_kisi %}<div style="font-size:12px; color:var(--text3); margin-top:2px;">{{ kiraci.yetkili_kisi }}</div>{% endif %}
                     </div>
                     <div style="display:flex; gap:14px; align-items:center;">
-                        <div class="amount" style="font-size:14px; color:var(--text2);">{{ kiraci.aylik_kira_tutari|para }} ₺</div>
+                        <div class="amount" style="font-size:14px; color:var(--text2);">
+                            {% if kiraci.guncel_kira_tutari %}{{ kiraci.guncel_kira_tutari|para }} ₺{% else %}—{% endif %}
+                        </div>
                         {% with borc=kiraci.bu_ay_borc %}
                         <div class="amount" style="font-size:14px; color:{% if borc > 0 %}var(--red){% else %}var(--green){% endif %};">{{ borc|para }} ₺</div>
                         {% endwith %}
