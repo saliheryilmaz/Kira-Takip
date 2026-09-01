@@ -62,7 +62,7 @@ class Kiraci(models.Model):
         return kayit_ay
 
     def _donem_tutari(self):
-        """Bir ödeme döneminin beklenen tutarı. Yıllık varsa yıllık, yoksa aylık."""
+        """Anlık kira tutarı (form/gösterim için). Yıllık varsa yıllık, yoksa aylık."""
         if self.yillik_kira_tutari:
             return self.yillik_kira_tutari
         return self.aylik_kira_tutari or Decimal('0')
@@ -71,8 +71,28 @@ class Kiraci(models.Model):
         """Yıllık kirada 1 dönem = 12 ay, aylık kirada 1 dönem = 1 ay."""
         return 12 if self.yillik_kira_tutari else 1
 
+    def _tarihce_tutari(self, tarih):
+        """
+        Verilen tarihe (date nesnesi, ayın 1'i) ait geçerli kira tutarını tarihçeden döndür.
+        Tarihçe yoksa anlık tutarı kullan (geriye dönük uyumluluk).
+        """
+        # O tarihten önce veya o tarihte başlamış en son kaydı bul
+        gecmis = self.zam_gecmisi.filter(
+            gecerlilik_tarihi__lte=tarih
+        ).order_by('-gecerlilik_tarihi').first()
+
+        if gecmis:
+            if gecmis.yillik_kira_tutari:
+                return gecmis.yillik_kira_tutari, True   # (tutar, yillik_mod)
+            return gecmis.aylik_kira_tutari or Decimal('0'), False
+
+        # Tarihçe yoksa anlık değeri kullan
+        if self.yillik_kira_tutari:
+            return self.yillik_kira_tutari, True
+        return self.aylik_kira_tutari or Decimal('0'), False
+
     def toplam_beklenen(self, bitis_yil=None, bitis_ay=None):
-        """Kaydedildiği aydan bugüne kadar beklenen toplam kira tutarı."""
+        """Kaydedildiği aydan bugüne kadar beklenen toplam kira tutarı (tarihçe bazlı)."""
         bugun = timezone.now().date()
         if bitis_yil and bitis_ay:
             bitis = bugun.replace(year=bitis_yil, month=bitis_ay, day=1)
@@ -85,25 +105,44 @@ class Kiraci(models.Model):
         if baslangic > bitis_ay_basi:
             return Decimal('0')
 
-        ay_sayisi = 0
+        toplam = Decimal('0')
         current = baslangic
+        # Yıllık modda aynı yıl/oran bloğunu tekrar saymamak için
+        yillik_sayilan = set()
+
         while current <= bitis_ay_basi:
-            ay_sayisi += 1
+            tutar, yillik_mod = self._tarihce_tutari(current)
+
+            if yillik_mod:
+                # Yıllık modda: her başlamış yıl için bir kez tam yıllık tutar ekle
+                # "Yıl" = aynı gecerlilik_tarihi bloğunda takvim yılı
+                yil_key = (current.year, tutar)
+                if yil_key not in yillik_sayilan:
+                    yillik_sayilan.add(yil_key)
+                    toplam += tutar
+            else:
+                # Aylık mod: her ay ayrı ayrı ekle
+                toplam += tutar
+
             if current.month == 12:
                 current = current.replace(year=current.year + 1, month=1)
             else:
                 current = current.replace(month=current.month + 1)
 
+        return toplam
+
+    def bu_ay_borc(self):
+        """Bu ay için eksik kalan tutarı döndürür. Yıllık modda toplam borcu gösterir."""
         if self.yillik_kira_tutari:
-            # Yıllık: sözleşme başladığı andan itibaren tüm yıllık tutar beklenir
-            # Tam yıl + başlamış yıl varsa onu da say
-            tam_yil = ay_sayisi // 12
-            kalan_ay = ay_sayisi % 12
-            toplam = self.yillik_kira_tutari * tam_yil
-            if kalan_ay > 0:
-                toplam += self.yillik_kira_tutari  # başlamış yılın tamamı beklenir
-            return toplam if toplam > 0 else self.yillik_kira_tutari
-        return (self.aylik_kira_tutari or Decimal('0')) * ay_sayisi
+            return self.toplam_borc()
+        bugun = timezone.now().date()
+        ay_basi = bugun.replace(day=1)
+        beklenen, _ = self._tarihce_tutari(ay_basi)
+        odenen = self.odemeler.filter(
+            yil=bugun.year, ay=bugun.month
+        ).aggregate(t=models.Sum('odenen_tutar'))['t'] or Decimal('0')
+        fark = beklenen - odenen
+        return fark if fark > 0 else Decimal('0')
 
     def toplam_odenen(self):
         return self.odemeler.aggregate(
@@ -117,7 +156,7 @@ class Kiraci(models.Model):
         return fark if fark > 0 else Decimal('0')
 
     def ay_listesi(self):
-        """Kaydedildiği aydan en son ödemeye kadar tüm ayları döndür."""
+        """Kaydedildiği aydan en son ödemeye kadar tüm ayları döndür (tarihçe bazlı)."""
         bugun = timezone.now().date()
         baslangic = self._takip_baslangic()
 
@@ -137,7 +176,8 @@ class Kiraci(models.Model):
         while current <= bitis:
             odemeler = self.odemeler.filter(yil=current.year, ay=current.month)
             odenen = odemeler.aggregate(t=models.Sum('odenen_tutar'))['t'] or Decimal('0')
-            beklenen = self._donem_tutari()
+            # O aya ait geçerli tutarı tarihçeden al
+            beklenen, yillik_mod = self._tarihce_tutari(current)
             aylar.append({
                 'yil': current.year,
                 'ay': current.month,
@@ -147,7 +187,7 @@ class Kiraci(models.Model):
                 'odendi': odenen >= beklenen,
                 'odenen': odenen,
                 'eksik': max(beklenen - odenen, Decimal('0')),
-                'yillik_mod': bool(self.yillik_kira_tutari),
+                'yillik_mod': yillik_mod,
             })
             if current.month == 12:
                 current = current.replace(year=current.year + 1, month=1)
@@ -190,6 +230,38 @@ class Odeme(models.Model):
         aylar = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
                  'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
         return aylar[self.ay]
+
+
+class KiraZamGecmisi(models.Model):
+    """
+    Kira tutarının tarihçesini tutar. Her zam yapıldığında yeni bir kayıt oluşturulur.
+    Böylece geçmiş aylardaki beklenen tutar doğru hesaplanır.
+    """
+    kiraci = models.ForeignKey(
+        Kiraci, on_delete=models.CASCADE,
+        related_name='zam_gecmisi', verbose_name="Kiracı"
+    )
+    gecerlilik_tarihi = models.DateField(verbose_name="Geçerlilik Tarihi (Ay Başı)")
+    aylik_kira_tutari = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        null=True, blank=True, verbose_name="Aylık Kira Tutarı (₺)"
+    )
+    yillik_kira_tutari = models.DecimalField(
+        max_digits=12, decimal_places=2,
+        null=True, blank=True, verbose_name="Yıllık Kira Tutarı (₺)"
+    )
+    aciklama = models.CharField(max_length=200, blank=True, verbose_name="Açıklama (ör. TÜFE zammı)")
+    olusturulma_tarihi = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Kira Zam Geçmişi"
+        verbose_name_plural = "Kira Zam Geçmişleri"
+        ordering = ['kiraci', 'gecerlilik_tarihi']
+        unique_together = [('kiraci', 'gecerlilik_tarihi')]
+
+    def __str__(self):
+        tutar = self.yillik_kira_tutari or self.aylik_kira_tutari or 0
+        return f"{self.kiraci.firma_adi} — {self.gecerlilik_tarihi.strftime('%m/%Y')} → {tutar} ₺"
 
 
 class BildirimLog(models.Model):

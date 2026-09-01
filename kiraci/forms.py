@@ -36,6 +36,16 @@ class ProfilForm(forms.ModelForm):
 
 
 class KiraciForm(forms.ModelForm):
+
+    # Yeni kira tutarının hangi aydan itibaren geçerli olduğunu seçmek için ek alan
+    # Sadece düzenleme (zam) ekranında gösterilir, yeni kiracı eklerken kullanılmaz
+    zam_gecerlilik_tarihi = forms.DateField(
+        required=False,
+        label='Yeni Tutar Geçerlilik Tarihi',
+        widget=forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+        help_text='Kira tutarını değiştiriyorsanız hangi aydan itibaren geçerli olacağını seçin.'
+    )
+
     class Meta:
         model = Kiraci
         fields = [
@@ -62,10 +72,19 @@ class KiraciForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        bugun = timezone.now().date()
         if not self.instance.pk:
-            bugun = timezone.now().date().strftime('%Y-%m-%d')
-            self.fields['kira_baslangic_tarihi'].widget.attrs['value'] = bugun
-            self.fields['kira_baslangic_tarihi'].initial = bugun
+            bugun_str = bugun.strftime('%Y-%m-%d')
+            self.fields['kira_baslangic_tarihi'].widget.attrs['value'] = bugun_str
+            self.fields['kira_baslangic_tarihi'].initial = bugun_str
+        else:
+            # Düzenleme modunda: varsayılan geçerlilik tarihi = bir sonraki ayın 1'i
+            if bugun.month == 12:
+                sonraki_ay = bugun.replace(year=bugun.year + 1, month=1, day=1)
+            else:
+                sonraki_ay = bugun.replace(month=bugun.month + 1, day=1)
+            self.fields['zam_gecerlilik_tarihi'].initial = sonraki_ay.strftime('%Y-%m-%d')
+            self.fields['zam_gecerlilik_tarihi'].widget.attrs['value'] = sonraki_ay.strftime('%Y-%m-%d')
         # Her iki alan da opsiyonel — form seviyesinde required=False
         self.fields['aylik_kira_tutari'].required = False
         self.fields['yillik_kira_tutari'].required = False
@@ -84,13 +103,8 @@ class OdemeForm(forms.ModelForm):
         model = Odeme
         fields = ['yil', 'ay', 'odenen_tutar', 'odeme_turu', 'odeme_tarihi', 'aciklama']
         widgets = {
-            'yil': forms.NumberInput(attrs={'class': 'form-input', 'min': 2020, 'max': 2099}),
-            'ay': forms.Select(attrs={'class': 'form-input'}, choices=[
-                (i, ad) for i, ad in enumerate(
-                    ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
-                     'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'], 0
-                ) if i > 0
-            ]),
+            'yil': forms.HiddenInput(),
+            'ay': forms.HiddenInput(),
             'odenen_tutar': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.01'}),
             'odeme_turu': forms.HiddenInput(),
             'odeme_tarihi': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
@@ -109,3 +123,12 @@ class OdemeForm(forms.ModelForm):
             self.fields['odeme_turu'].initial = 'nakit'
             if kiraci:
                 self.fields['odenen_tutar'].initial = kiraci._donem_tutari()
+
+    def clean(self):
+        cleaned = super().clean()
+        odeme_tarihi = cleaned.get('odeme_tarihi')
+        if odeme_tarihi:
+            # Yıl ve ay'ı ödeme tarihinden otomatik al
+            cleaned['yil'] = odeme_tarihi.year
+            cleaned['ay'] = odeme_tarihi.month
+        return cleaned

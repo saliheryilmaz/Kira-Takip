@@ -104,10 +104,7 @@
                 <tr>
                     <th>Firma / Kişi</th>
                     <th>Aylık Kira</th>
-                    <th>Başlangıç</th>
-                    <th>Ödenen</th>
-                    <th>Alacak</th>
-                    <th>Durum</th>
+                    <th>Alacak (Bu Ay)</th>
                     <th></th>
                 </tr>
             </thead>
@@ -119,16 +116,10 @@
                         {% if kiraci.yetkili_kisi %}<div class="firm-sub">{{ kiraci.yetkili_kisi }}</div>{% endif %}
                     </td>
                     <td data-label="Aylık Kira"><span class="amount">{{ kiraci.aylik_kira_tutari|para }} ₺</span></td>
-                    <td data-label="Başlangıç" class="text-muted">{{ kiraci.kira_baslangic_tarihi|date:"d.m.Y" }}</td>
-                    <td data-label="Ödenen"><span class="amount text-green">{{ kiraci.toplam_odenen|para }} ₺</span></td>
-                    <td data-label="Alacak">
-                        {% with borc=kiraci.toplam_borc %}
+                    <td data-label="Alacak (Bu Ay)">
+                        {% with borc=kiraci.bu_ay_borc %}
                         <span class="amount {% if borc > 0 %}text-red{% else %}text-green{% endif %}">{{ borc|para }} ₺</span>
                         {% endwith %}
-                    </td>
-                    <td data-label="Durum">
-                        {% if kiraci.aktif %}<span class="badge badge-green">Aktif</span>
-                        {% else %}<span class="badge badge-gray">Pasif</span>{% endif %}
                     </td>
                     <td><a href="{% url 'kiraci_detay' kiraci.pk %}" class="btn btn-ghost btn-sm">Detay</a></td>
                 </tr>
@@ -142,26 +133,14 @@
         {% for kiraci in kiraciler %}
         <a href="{% url 'kiraci_detay' kiraci.pk %}" style="text-decoration:none; display:block; margin-bottom:10px;">
             <div style="background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 16px; box-shadow:var(--shadow);">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                     <div>
                         <div style="font-size:15px; font-weight:700; color:var(--text); letter-spacing:-0.01em;">{{ kiraci.firma_adi }}</div>
                         {% if kiraci.yetkili_kisi %}<div style="font-size:12px; color:var(--text3); margin-top:2px;">{{ kiraci.yetkili_kisi }}</div>{% endif %}
                     </div>
-                    {% if kiraci.aktif %}<span class="badge badge-green">Aktif</span>
-                    {% else %}<span class="badge badge-gray">Pasif</span>{% endif %}
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
-                    <div>
-                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Aylık Kira</div>
-                        <div class="amount text-blue" style="font-size:14px;">{{ kiraci.aylik_kira_tutari|para }} ₺</div>
-                    </div>
-                    <div>
-                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Ödenen</div>
-                        <div class="amount text-green" style="font-size:14px;">{{ kiraci.toplam_odenen|para }} ₺</div>
-                    </div>
-                    <div>
-                        <div style="font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;">Alacak</div>
-                        {% with borc=kiraci.toplam_borc %}
+                    <div style="display:flex; gap:14px; align-items:center;">
+                        <div class="amount" style="font-size:14px; color:var(--text2);">{{ kiraci.aylik_kira_tutari|para }} ₺</div>
+                        {% with borc=kiraci.bu_ay_borc %}
                         <div class="amount" style="font-size:14px; color:{% if borc > 0 %}var(--red){% else %}var(--green){% endif %};">{{ borc|para }} ₺</div>
                         {% endwith %}
                     </div>

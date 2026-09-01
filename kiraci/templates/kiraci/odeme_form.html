@@ -18,16 +18,6 @@
                 {% csrf_token %}
                 <div class="form-grid" style="margin-bottom:18px;">
                     <div class="form-group">
-                        <label>Yıl *</label>
-                        {{ form.yil }}
-                        {% if form.yil.errors %}<span style="color:var(--red); font-size:11px;">{{ form.yil.errors.0 }}</span>{% endif %}
-                    </div>
-                    <div class="form-group">
-                        <label>Ay *</label>
-                        {{ form.ay }}
-                        {% if form.ay.errors %}<span style="color:var(--red); font-size:11px;">{{ form.ay.errors.0 }}</span>{% endif %}
-                    </div>
-                    <div class="form-group">
                         <label>Ödenen Tutar (₺) *</label>
                         {{ form.odenen_tutar }}
                         <span style="font-size:11px; color:var(--text3);">Beklenen: {{ kiraci.aylik_kira_tutari|para }} ₺</span>
@@ -40,6 +30,8 @@
                 </div>
 
                 {{ form.odeme_turu }}
+                {{ form.yil }}
+                {{ form.ay }}
 
                 <div class="form-group" style="margin-bottom:20px;">
                     <label>Açıklama <span style="font-weight:400; color:var(--text3);">(opsiyonel)</span></label>

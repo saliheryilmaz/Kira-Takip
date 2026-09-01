@@ -66,6 +66,14 @@
                         {{ form.yillik_kira_tutari }}
                         <span style="font-size:11px; color:var(--text3);">Yıllık peşin ödeme varsa girin</span>
                     </div>
+                    {% if kiraci %}
+                    <div class="form-group">
+                        <label>Yeni Tutar Geçerlilik Tarihi <span style="color:var(--text3); font-weight:400;">(zam yapıyorsanız)</span></label>
+                        {{ form.zam_gecerlilik_tarihi }}
+                        <span style="font-size:11px; color:var(--text3);">Kira tutarını değiştiriyorsanız hangi ayın 1'inden itibaren geçerli olacağını seçin.</span>
+                        {% if form.zam_gecerlilik_tarihi.errors %}<span style="color:var(--red); font-size:11px;">{{ form.zam_gecerlilik_tarihi.errors.0 }}</span>{% endif %}
+                    </div>
+                    {% endif %}
                     <div class="form-group">
                         <label>Depozit (₺) <span style="color:var(--text3); font-weight:400;">(opsiyonel)</span></label>
                         {{ form.depozit }}

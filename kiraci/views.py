@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.db.models import Sum
 from decimal import Decimal
 import json
-from .models import Kiraci, Odeme, UserProfile
+from .models import Kiraci, Odeme, UserProfile, KiraZamGecmisi
 from .forms import KiraciForm, OdemeForm, KayitForm, ProfilForm
 
 
@@ -64,6 +64,23 @@ def profil(request):
 
 
 # ─── Kiracı ───
+
+def _zam_gecmisi_kaydet(kiraci, gecerlilik_tarihi):
+    """
+    Kiracının mevcut kira tutarını tarihçeye kaydeder.
+    Aynı ay için zaten kayıt varsa günceller (update_or_create).
+    gecerlilik_tarihi: ayın 1'i olarak verilmeli.
+    """
+    ay_basi = gecerlilik_tarihi.replace(day=1)
+    KiraZamGecmisi.objects.update_or_create(
+        kiraci=kiraci,
+        gecerlilik_tarihi=ay_basi,
+        defaults={
+            'aylik_kira_tutari': kiraci.aylik_kira_tutari,
+            'yillik_kira_tutari': kiraci.yillik_kira_tutari,
+        }
+    )
+
 
 @login_required
 def kiraci_listesi(request):
@@ -169,6 +186,8 @@ def kiraci_ekle(request):
             kiraci = form.save(commit=False)
             kiraci.user = request.user
             kiraci.save()
+            # Başlangıç kira tutarını tarihçeye kaydet
+            _zam_gecmisi_kaydet(kiraci, kiraci.olusturulma_tarihi.date())
             messages.success(request, f'"{kiraci.firma_adi}" başarıyla eklendi.')
             return redirect('kiraci_detay', pk=kiraci.pk)
     else:
@@ -180,10 +199,28 @@ def kiraci_ekle(request):
 def kiraci_duzenle(request, pk):
     kiraci = get_object_or_404(Kiraci, pk=pk, user=request.user)
     if request.method == 'POST':
+        # Zam tespiti için kaydetmeden önce eski tutarları sakla
+        eski_aylik = kiraci.aylik_kira_tutari
+        eski_yillik = kiraci.yillik_kira_tutari
+
         form = KiraciForm(request.POST, request.FILES, instance=kiraci)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Kiracı bilgileri güncellendi.')
+
+            # Kira tutarı değiştiyse tarihçeye yeni kayıt oluştur
+            yeni_aylik = kiraci.aylik_kira_tutari
+            yeni_yillik = kiraci.yillik_kira_tutari
+            if yeni_aylik != eski_aylik or yeni_yillik != eski_yillik:
+                # Formdan geçerlilik tarihi geldiyse onu kullan, yoksa bu ayın 1'i
+                zam_tarihi = form.cleaned_data.get('zam_gecerlilik_tarihi')
+                if zam_tarihi:
+                    gecerlilik = zam_tarihi.replace(day=1)
+                else:
+                    gecerlilik = timezone.now().date().replace(day=1)
+                _zam_gecmisi_kaydet(kiraci, gecerlilik)
+                messages.success(request, f'Kiracı bilgileri güncellendi. Yeni kira tutarı {gecerlilik.strftime("%d.%m.%Y")} tarihinden itibaren geçerli.')
+            else:
+                messages.success(request, 'Kiracı bilgileri güncellendi.')
             return redirect('kiraci_detay', pk=kiraci.pk)
     else:
         form = KiraciForm(instance=kiraci)
@@ -273,7 +310,9 @@ def aylik_ozet(request):
     toplam_odenen = Decimal('0')
     for kiraci in kiraciler:
         odemeler = kiraci.odemeler.filter(yil=yil, ay=ay)
-        beklenen = kiraci._donem_tutari()
+        # O aya ait geçerli tutarı tarihçeden al
+        ay_basi = timezone.now().date().replace(year=yil, month=ay, day=1)
+        beklenen, _ = kiraci._tarihce_tutari(ay_basi)
         odenen = odemeler.aggregate(t=Sum('odenen_tutar'))['t'] or Decimal('0')
         toplam_beklenen += beklenen
         toplam_odenen += odenen
