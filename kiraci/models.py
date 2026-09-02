@@ -149,8 +149,7 @@ class Kiraci(models.Model):
         if self.yillik_kira_tutari:
             return self.toplam_borc()
         bugun = timezone.now().date()
-        ay_basi = bugun.replace(day=1)
-        beklenen, _ = self._tarihce_tutari(ay_basi)
+        beklenen = self.aylik_kira_tutari or Decimal('0')
         odenen = self.odemeler.filter(
             yil=bugun.year, ay=bugun.month
         ).aggregate(t=models.Sum('odenen_tutar'))['t'] or Decimal('0')
