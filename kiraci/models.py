@@ -140,12 +140,10 @@ class Kiraci(models.Model):
         return toplam
 
     def guncel_kira_tutari(self):
-        """Bu ay için geçerli aylık kira tutarını döndürür. Yıllık modda None döner."""
+        """Güncel aylık kira tutarını döndürür. Yıllık modda None döner."""
         if self.yillik_kira_tutari:
             return None
-        bugun = timezone.now().date().replace(day=1)
-        tutar, _ = self._tarihce_tutari(bugun)
-        return tutar
+        return self.aylik_kira_tutari
 
     def bu_ay_borc(self):
         if self.yillik_kira_tutari:
