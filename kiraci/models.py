@@ -87,7 +87,6 @@ class Kiraci(models.Model):
             return gecmis.aylik_kira_tutari or Decimal('0'), False
 
         # O tarihten önce kayıt yoksa — en eski tarihçe kaydını kullan
-        # (zam öncesi aylara yanlışlıkla yeni tutar uygulanmasını engeller)
         en_eski = self.zam_gecmisi.order_by('gecerlilik_tarihi').first()
         if en_eski:
             if en_eski.yillik_kira_tutari:
@@ -119,7 +118,15 @@ class Kiraci(models.Model):
         yillik_sayilan = set()
 
         while current <= bitis_ay_basi:
-            tutar, yillik_mod = self._tarihce_tutari(current)
+            # En son tarihçe kaydından sonraki aylar için anlık tutarı kullan
+            son_kayit = self.zam_gecmisi.order_by('-gecerlilik_tarihi').first()
+            if son_kayit and current > son_kayit.gecerlilik_tarihi:
+                if self.yillik_kira_tutari:
+                    tutar, yillik_mod = self.yillik_kira_tutari, True
+                else:
+                    tutar, yillik_mod = self.aylik_kira_tutari or Decimal('0'), False
+            else:
+                tutar, yillik_mod = self._tarihce_tutari(current)
 
             if yillik_mod:
                 # Yıllık modda: her başlamış yıl için bir kez tam yıllık tutar ekle
@@ -189,7 +196,15 @@ class Kiraci(models.Model):
             odemeler = self.odemeler.filter(yil=current.year, ay=current.month)
             odenen = odemeler.aggregate(t=models.Sum('odenen_tutar'))['t'] or Decimal('0')
             # O aya ait geçerli tutarı tarihçeden al
-            beklenen, yillik_mod = self._tarihce_tutari(current)
+            # En son tarihçe kaydından sonraki aylar için anlık tutarı kullan
+            son_kayit = self.zam_gecmisi.order_by('-gecerlilik_tarihi').first()
+            if son_kayit and current > son_kayit.gecerlilik_tarihi:
+                if self.yillik_kira_tutari:
+                    beklenen, yillik_mod = self.yillik_kira_tutari, True
+                else:
+                    beklenen, yillik_mod = self.aylik_kira_tutari or Decimal('0'), False
+            else:
+                beklenen, yillik_mod = self._tarihce_tutari(current)
             aylar.append({
                 'yil': current.year,
                 'ay': current.month,
